@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/multicheckin/db" VERSION="2026102404" COMMENT="XMLDB file for Moodle mod_multicheckin"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="multicheckin" COMMENT="Defines one attendance occurrence (a session of the activity).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Course id."/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Name of this attendance occurrence."/>
+        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Description."/>
+        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Description of this occurrence, shown to students and teachers. Separate from intro, which is the activity's own introduction and is copied from the template on sync."/>
+        <FIELD NAME="descriptionformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Text format of description: FORMAT_HTML (1) for anything written since rich text was offered, FORMAT_PLAIN (2) for rows carried over from the plain-textarea era, which are rendered with their newlines preserved instead of being handed to the HTML filter."/>
+        <FIELD NAME="timestart" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Session start (the base time T0)."/>
+        <FIELD NAME="timeend" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Session end time."/>
+        <FIELD NAME="lategrace" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="300" SEQUENCE="false" COMMENT="Seconds after T0 before a first check-in counts as late."/>
+        <FIELD NAME="earlygrace" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="300" SEQUENCE="false" COMMENT="Seconds before timeend within which no checkout => early leave."/>
+        <FIELD NAME="absentreason" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Reason for absence."/>
+        <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Max grade (0 = no grade)."/>
+        <FIELD NAME="pointspresent" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="2" SEQUENCE="false" COMMENT="Raw points for the final status P (present)."/>
+        <FIELD NAME="pointslate" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Raw points for the final status L (late)."/>
+        <FIELD NAME="pointsearly" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0.5" SEQUENCE="false" COMMENT="Raw points for the final status EL (left early)."/>
+        <FIELD NAME="pointslateearly" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0.5" SEQUENCE="false" COMMENT="Raw points for the final status LT (late and left early)."/>
+        <FIELD NAME="pointsabsent" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Raw points for the final status A (absent)."/>
+        <FIELD NAME="pointsleave" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0.5" SEQUENCE="false" COMMENT="Raw points for the final status LV (on leave)."/>
+        <FIELD NAME="earlymode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="window" SEQUENCE="false" COMMENT="Early-leave judgement mode: window|threshold."/>
+        <FIELD NAME="allowselfcheckin" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = students may check in by themselves."/>
+        <FIELD NAME="qronly" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = every point of this occurrence accepts QR check-ins only: the self and password paths are closed. Stricter than allowselfcheckin, which only hides the button. Off by default so nothing that already runs changes."/>
+        <FIELD NAME="selfcheckinpassword" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Optional global password for self check-in."/>
+        <FIELD NAME="notifyenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = send reminders for upcoming check-in points. Off by default: a check-in that speaks for itself should not start mailing the class until the teacher asks it to."/>
+        <FIELD NAME="notifyleadtime" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="300" SEQUENCE="false" COMMENT="Seconds before a point opens to start reminding."/>
+        <FIELD NAME="notifyrule" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="chain" SEQUENCE="false" COMMENT="Which points send a reminder: chain = the first point always, later points only to students who checked in at the point before them; all = every point; first = only the first point of the occurrence. Unknown values fall back to chain."/>
+        <FIELD NAME="qrrotation" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="QR token rotation period in seconds (5-300)."/>
+        <FIELD NAME="geomode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="none" SEQUENCE="false" COMMENT="Geofence mode for self check-in: none|ip|gps|both."/>
+        <FIELD NAME="geoipranges" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Allowed client IP/CIDR ranges, one per line."/>
+        <FIELD NAME="geolat" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Classroom centre latitude."/>
+        <FIELD NAME="geolng" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Classroom centre longitude."/>
+        <FIELD NAME="georadius" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Allowed radius in metres."/>
+        <FIELD NAME="geoenforceqr" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = also apply the geofence to QR check-ins (the default; a scanned code must satisfy the fence too)."/>
+        <FIELD NAME="showgeoaudit" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = offer the teacher-facing link to the geofence audit page for this activity."/>
+        <FIELD NAME="audience" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="student" SEQUENCE="false" COMMENT="Comma-separated role shortnames whose holders are this activity's participants (the attendance roster). Default 'student'."/>
+        <FIELD NAME="parentid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = the activity's configuration template; else the id of the template this occurrence belongs to."/>
+        <FIELD NAME="seriesid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Groups the occurrences generated in one batch (equals the template id). 0 = template."/>
+        <FIELD NAME="seqno" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Ordinal of this occurrence within its series, for display as 'Occurrence N'."/>
+        <FIELD NAME="gradeaggregate" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="all" SEQUENCE="false" COMMENT="How occurrence grades combine into the activity grade: all|sum|best."/>
+        <FIELD NAME="gradebestcount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Number of best occurrences kept when gradeaggregate = best."/>
+        <FIELD NAME="requiresignout" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = the session has an end-of-class check-in; 0 = a successful sign-in is the whole record (no early-leave penalty)."/>
+        <FIELD NAME="photorequired" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = every check-in in this occurrence must be proved with a photograph taken on the spot (browser camera, no uploads). Off by default so nothing that already runs changes."/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timefinalised" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When the scheduled task last computed this occurrence AFTER it ended; 0 = never. Its only job is to tell 'nobody has settled this yet' apart from 'this was settled an hour ago', so the safety net stops re-doing finished work every hour without ever losing a run that died halfway."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
+        <INDEX NAME="parentid" UNIQUE="false" FIELDS="parentid"/>
+        <INDEX NAME="notifyenabled-timestart-timeend" UNIQUE="false" FIELDS="notifyenabled,timestart,timeend"/>
+        <INDEX NAME="timeend" UNIQUE="false" FIELDS="timeend"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_point" COMMENT="Defines the N check-in points belonging to one occurrence.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin.id."/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Point name e.g. Sign-in / Mid check / Sign-out."/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Display order; 1 = first check-in point."/>
+        <FIELD NAME="openoffset" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Open time as seconds offset from T0 (negative = before)."/>
+        <FIELD NAME="closeoffset" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Close time as seconds offset from T0."/>
+        <FIELD NAME="role" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="checkin" SEQUENCE="false" COMMENT="Role: first|mid|last (drives late/early logic)."/>
+        <FIELD NAME="required" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = must be checked to avoid absence."/>
+        <FIELD NAME="password" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Optional per-point password."/>
+        <FIELD NAME="qrcode" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = show QR code for this point."/>
+        <FIELD NAME="qronly" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = this point accepts QR check-ins only. Combined with the occurrence-level flag by qr_manager::only_scan(), which is the single place that decides."/>
+        <FIELD NAME="qrcodekey" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Secret used to sign rotating QR tokens."/>
+        <FIELD NAME="qrcodetime" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last QR generation time."/>
+        <FIELD NAME="notify" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = send a reminder when this point opens."/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="multicheckin" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-sortorder" UNIQUE="false" FIELDS="sessionid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_log" COMMENT="Raw check-in events (a user may have many per point).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="pointid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin_point.id."/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Denormalised multicheckin.id for fast queries."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time the check-in was recorded."/>
+        <FIELD NAME="ip" TYPE="char" LENGTH="45" NOTNULL="false" SEQUENCE="false" COMMENT="Client IP (supports IPv6)."/>
+        <FIELD NAME="method" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual|self|qr|password."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="pointid" TYPE="foreign" FIELDS="pointid" REFTABLE="multicheckin_point" REFFIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="multicheckin" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-userid" UNIQUE="false" FIELDS="sessionid, userid"/>
+        <INDEX NAME="pointid-userid" UNIQUE="false" FIELDS="pointid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_geo_log" COMMENT="Audit trail of the geofence decision for every self/QR check-in attempt.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="pointid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="method" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="self" SEQUENCE="false" COMMENT="self|qr|password."/>
+        <FIELD NAME="geomode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="none" SEQUENCE="false" COMMENT="Mode that was evaluated."/>
+        <FIELD NAME="allowed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = passed the geofence, 0 = rejected."/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Machine reason code, e.g. ip_not_allowed / out_of_range / no_gps."/>
+        <FIELD NAME="ip" TYPE="char" LENGTH="45" NOTNULL="false" SEQUENCE="false" COMMENT="Client IP at attempt time."/>
+        <FIELD NAME="latitude" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="false" SEQUENCE="false" COMMENT="Reported latitude (GPS mode)."/>
+        <FIELD NAME="longitude" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="false" SEQUENCE="false" COMMENT="Reported longitude (GPS mode)."/>
+        <FIELD NAME="accuracy" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Reported GPS accuracy in metres."/>
+        <FIELD NAME="distance" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Computed distance to classroom centre, metres."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-userid" UNIQUE="false" FIELDS="sessionid, userid"/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_result" COMMENT="Computed final status per user per occurrence.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="statuscode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="A" SEQUENCE="false" COMMENT="P/L/EL/A (present, late, early-leave, absent)."/>
+        <FIELD NAME="firstcheckin" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Earliest check-in timestamp."/>
+        <FIELD NAME="lastcheckin" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Latest check-in timestamp."/>
+        <FIELD NAME="latemin" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Minutes late (0 if not late)."/>
+        <FIELD NAME="earlymin" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Minutes left early (0 if not early)."/>
+        <FIELD NAME="points" TYPE="number" LENGTH="10" DECIMALS="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Points awarded for this occurrence."/>
+        <FIELD NAME="timecomputed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="multicheckin" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-userid" UNIQUE="true" FIELDS="sessionid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_notify" COMMENT="Tracks which reminder messages have already been sent, to avoid duplicates.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="pointid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-pointid-userid" UNIQUE="true" FIELDS="sessionid, pointid, userid"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_place" COMMENT="Site-wide library of named classroom locations, so a teacher picks a room instead of retyping its coordinates.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Display name, e.g. 主楼 A301 or 阶梯教室 3."/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional note, shown as a hint in the picker."/>
+        <FIELD NAME="latitude" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Classroom centre latitude. Always WGS-84, matching what the browser reports."/>
+        <FIELD NAME="longitude" TYPE="number" LENGTH="10" DECIMALS="7" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Classroom centre longitude."/>
+        <FIELD NAME="defaultradius" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Suggested radius in metres for this room."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who last added or edited this place."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="name" UNIQUE="false" FIELDS="name" COMMENT="The picker lists and searches by name."/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_leave" COMMENT="A student's leave request for one attendance occurrence, plus the teacher's review flag.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin.id (the occurrence this leave is for)."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional free-text reason given by whoever raised the leave."/>
+        <FIELD NAME="origin" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="student" SEQUENCE="false" COMMENT="student|teacher - who raised this leave."/>
+        <FIELD NAME="reviewed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = the teacher has looked at this request. Drives the pending badge."/>
+        <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User who marked it reviewed (0 = nobody yet)."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="multicheckin" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-userid" UNIQUE="true" FIELDS="sessionid, userid" COMMENT="One leave per student per occurrence."/>
+        <INDEX NAME="sessionid-reviewed" UNIQUE="false" FIELDS="sessionid, reviewed" COMMENT="Speeds up the 'awaiting review' count."/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_photoreq" COMMENT="A student's request to be checked in by hand because the on-the-spot photograph could not be taken, plus the teacher's decision.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin.id (the occurrence)."/>
+        <FIELD NAME="pointid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin_point.id. Per point, not per occurrence: a photograph proves ONE check-in, and a sign-in and a sign-out are two separate proofs."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional free-text reason given by the student when asking for review."/>
+        <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = waiting for the teacher, 1 = approved (checked in by hand), 2 = refused."/>
+        <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Teacher who decided (0 = nobody yet)."/>
+        <FIELD NAME="timereviewed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When the decision was taken."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="multicheckin" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionid-pointid-userid" UNIQUE="true" FIELDS="sessionid, pointid, userid" COMMENT="One request per student per point."/>
+        <INDEX NAME="sessionid-status" UNIQUE="false" FIELDS="sessionid, status" COMMENT="Speeds up the 'waiting for review' count."/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="multicheckin_pass" COMMENT="A one-shot permission to open the camera for one point, held in the database rather than in the student's session so the same link works in any browser the same student is logged into.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="tokenhash" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="sha256 of the token in the URL. The token itself is never stored, so a copy of this table yields no working link."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The one person the permit belongs to. Cross-browser reach is only safe because of this column."/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin.id (the occurrence)."/>
+        <FIELD NAME="pointid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="multicheckin_point.id."/>
+        <FIELD NAME="method" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="self" SEQUENCE="false" COMMENT="self|qr|password - how the student proved who they were, which the fence is judged under at recording time."/>
+        <FIELD NAME="clientgeo" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON position that cleared the fence when the permit was issued, so recording can re-run the same verdict."/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Unix time after which the permit is refused. The only thing that limits its life."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="tokenhash" UNIQUE="true" FIELDS="tokenhash" COMMENT="The lookup every request makes, and what stops a token existing twice."/>
+        <INDEX NAME="userid-expires" UNIQUE="false" FIELDS="userid, expires" COMMENT="Listing and dropping one person's outstanding permits."/>
+        <INDEX NAME="sessionid" UNIQUE="false" FIELDS="sessionid" COMMENT="Privacy deletion by occurrence. Deliberately not a foreign key - see the design note for 2.0.23."/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires" COMMENT="Scheduled cleanup of permits nobody came back for."/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

@@ -1,0 +1,111 @@
+/*
+ * mod_multicheckin - the few rules the plugin's own markup needs.
+ *
+ * This file did not exist, so every class the code emitted was an undefined
+ * name. Most of them are fine that way and are deliberately left alone:
+ *
+ *   .multicheckin-toolbar, -toolbar-group, -toolbar-title  Bootstrap card/utility classes do the work.
+ *   .multicheckin-geobridge, -qrimg, -qrpanel            Bootstrap alert/border/text-centre classes do the work.
+ *   .multicheckin-geocheckin, -qropen, -noteopen         JavaScript selectors. Styling them here would only
+ *                                                        add a way for the script's hook to go missing.
+ *   .multicheckin-photo-*                                Identifiers read back with getElementById; the two
+ *                                                        that need rules carry them inline on the page.
+ *   .multicheckin-placemap, -occurrence, -description-*  Identifiers too.
+ *
+ * What is left is the handful of cases where an undefined name costs
+ * something visible, and each rule below is here because of one of them.
+ * The count is deliberately not written down: it has been wrong since the
+ * fifth rule was added, and a number in a comment is a number nobody updates.
+ *
+ * Rules are written against the plugin's own class names only, and use no
+ * !important: a theme that wants to overrule any of this should be able to.
+ */
+
+/*
+ * The occurrence table's time boxes.
+ *
+ * Both inputs carry Bootstrap's .form-control, which sets width:100%, and they
+ * sit in a flex row together. Two 100% children in one row shrink to the same
+ * width, so the date box and the three-character clock box ended up the same
+ * size and the row was as wide as the column allowed rather than as wide as its
+ * contents. The markup passes size="10" and size="6" precisely to say how wide
+ * each should be; width:auto is what lets those attributes be the answer,
+ * because an explicit width beats a size attribute.
+ */
+.multicheckin-when {
+    width: auto;
+    flex: 0 1 auto;
+}
+
+/*
+ * The note column of the same table, and the preview inside it.
+ *
+ * A note is free text and can be one unbroken run of characters - a long URL,
+ * or a Chinese sentence with no spaces. Without a break rule the column is as
+ * wide as the longest run in any row, which pushes the table past the page and
+ * makes the whole term's overview scroll sideways. The preview is escaped
+ * before it is emitted (description_editor::summary() is the only place that
+ * reads the stored text out), so this is a layout rule and nothing more.
+ */
+.multicheckin-note-cell {
+    word-break: break-word;
+}
+
+.multicheckin-note-summary {
+    overflow-wrap: anywhere;
+}
+
+/*
+ * The frame the note editor is loaded into inside the dialog.
+ *
+ * The rule sits here rather than being set by the module because the size has
+ * to hold before the frame's own script runs: a height applied afterwards would
+ * make the dialog jump as it opened. The width is the dialog's; only the height
+ * is decided here, in viewport units, so that a short laptop screen does not
+ * push the save button below the fold. The border is removed because the frame
+ * fills a container that already has one.
+ */
+.multicheckin-noteframe {
+    display: block;
+    width: 100%;
+    height: 70vh;
+    border: 0;
+}
+
+/*
+ * The "late and early" attendance badge.
+ *
+ * This rule is the whole point of the class. The badge used to ask for
+ * Bootstrap's bg-orange, which does not exist in Bootstrap 5, so the one status
+ * that spends the least time in class was drawn as plain dark text with no
+ * background - on the report, on the student's own panel, and in the series
+ * matrix. Naming the class here instead keeps the name and its definition in
+ * one repository, and picks a colour that stays distinguishable from late
+ * (yellow) and early (cyan) even in a theme that repaints those two.
+ *
+ * The text is dark rather than white because #fd7e14 is a light-enough orange
+ * that white text on it lands near 2.7:1, under the 4.5:1 the contrast
+ * guidelines ask for; #212529 on the same orange is about 7:1.
+ */
+.badge.multicheckin-status-lateearly {
+    background-color: #fd7e14;
+    color: #212529;
+}
+
+/*
+ * The row above a report table: the export button, then the summary.
+ *
+ * The border is the point of the rule. The summary is a line of numbers sitting
+ * immediately above a table of the same numbers broken down per student, and
+ * without a divider the two read as one block - the eye cannot tell where the
+ * totals stop and the roster starts. Bootstrap's own table has a top border but
+ * not a bottom one on whatever precedes it, so the line is drawn here.
+ *
+ * The colour falls back to a literal grey because the variable is only defined
+ * when Bootstrap's CSS has loaded; a theme that strips it would otherwise get a
+ * rule that silently does nothing, which is this stylesheet's oldest bug.
+ */
+.multicheckin-report-bar {
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    padding-bottom: 0.75rem;
+}

@@ -1,0 +1,14 @@
+# Moodle's coding style requires Unix line endings, and phpcs reports
+# Generic.Files.LineEndings when it finds CRLF. Windows Git converts LF to
+# CRLF on checkout by default (core.autocrlf=true), which would undo the
+# conversion and hand the reviewer CRLF files from a repository that looks
+# clean locally. This makes the repository authoritative: LF in, LF out,
+# on every platform.
+* text=auto eol=lf
+
+# Nothing here is text, whatever the extension says.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
