@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/multicheckin/db" VERSION="2026102404" COMMENT="XMLDB file for Moodle mod_multicheckin"
+<XMLDB PATH="mod/multicheckin/db" VERSION="2026102406" COMMENT="XMLDB file for Moodle mod_multicheckin"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >

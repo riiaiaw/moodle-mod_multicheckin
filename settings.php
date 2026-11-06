@@ -42,4 +42,29 @@ if ($ADMIN->fulltree) {
         \mod_multicheckin\schedule_planner::DEFAULT_MAX_SESSIONS,
         PARAM_INT
     ));
+
+    // ---- Report controls --------------------------------------------------
+    //
+    // Sorting, the status filter and the keyword search on the attendance
+    // report.
+    //
+    // A switch for a feature that has no moving parts deserves a reason, and
+    // the reason is history: an earlier version of these controls was removed
+    // wholesale while an unrelated fault was being investigated - a fault that
+    // made every page print a block of text, which turned out to be a
+    // JavaScript module and had no traceable link to this code. Rebuilding the
+    // controls server-side removes the whole category of cause, but "we could
+    // not reproduce it" is not the same as "it cannot happen".
+    //
+    // So: with this off, the report is the page it was before the controls
+    // existed - no links in the summary, no search box, the parameters read but
+    // ignored. That makes it the first thing to try when something odd appears
+    // after an upgrade, and the first thing to eliminate before concluding the
+    // plugin is at fault.
+    $settings->add(new admin_setting_configcheckbox(
+        'mod_multicheckin/reportfilters',
+        get_string('reportfilters', 'mod_multicheckin'),
+        get_string('reportfilters_desc', 'mod_multicheckin'),
+        1
+    ));
 }

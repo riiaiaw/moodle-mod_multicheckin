@@ -553,6 +553,17 @@ $string['reportall'] = 'Attendance across all occurrences';
 $string['report_expectedcount'] = 'Expected {$a}';
 $string['reportall_link'] = 'Report for all occurrences';
 $string['reportone_link'] = 'Report for one occurrence';
+
+// The report's own controls.
+$string['report_clear'] = 'Clear';
+$string['report_nomatch'] = 'No student matches this filter.';
+$string['report_search'] = 'Search';
+$string['report_search_placeholder'] = 'Name or student number';
+$string['report_showing'] = 'Showing {$a->shown} of {$a->total}';
+$string['report_sortasc'] = 'Sort by {$a} (ascending)';
+$string['report_sortdesc'] = 'Sort by {$a} (descending)';
+$string['reportfilters'] = 'Report sorting, status filter and search';
+$string['reportfilters_desc'] = 'When this is on, the attendance report can be sorted by name or student number, narrowed to one status by clicking its count, and searched by name or student number. When it is off, the report simply lists the whole class.';
 $string['occurrence_short'] = '{$a}';
 $string['attendancecount'] = 'Attended';
 $string['aggregate_note_all'] = 'The grade column is the average of every occurrence the student has a result for.';

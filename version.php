@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026102404;        // The current module version (yyyyMMddXX).
+$plugin->version   = 2026102406;        // The current module version (yyyyMMddXX).
 $plugin->requires  = 2026042000;        // Requires Moodle 5.2 (2026042000).
 $plugin->supported = [502, 502];        // Available for Moodle 5.2.x only.
 // The component is the FULL name, type prefix included: 'mod_multicheckin'.
@@ -40,7 +40,7 @@ $plugin->supported = [502, 502];        // Available for Moodle 5.2.x only.
 // itself, so passing 'mod_multicheckin' there would rebuild the doubled form.
 $plugin->component = 'mod_multicheckin'; // Full name of the plugin.
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = 'v2.1.4 (Moodle 5.2)';
+$plugin->release   = 'v2.1.6 (Moodle 5.2)';
 // No $plugin->dependencies. This plugin used to declare mod_attendance, but
 // that list is a HARD install-time gate in Moodle - a site without the standard
 // Attendance module could not install this one at all - and the only thing it

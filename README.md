@@ -56,6 +56,12 @@ value. Grading goes through `grade_update()`, so it behaves like any other grade
 ### Reports
 
 - A per-session report, and a whole-term matrix of students against sessions that exports to CSV.
+- The per-session sheet can be sorted by name or student number, narrowed to one status by
+  clicking its count, and searched by name or student number. Each of those is a plain URL, so a
+  filtered view can be bookmarked, sent to a colleague, or put on the course page - and none of it
+  needs JavaScript on the page.
+- The status counts always describe the whole class; the current view is stated separately as
+  "showing X of Y", so a count and the table below it can never appear to disagree.
 - A print-friendly layout, since the common need is a sheet to sign.
 - A geolocation audit page listing refused attempts by reason.
 

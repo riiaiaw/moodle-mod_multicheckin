@@ -549,6 +549,17 @@ $string['reportall'] = '全场次考勤汇总';
 $string['report_expectedcount'] = '应签到 {$a} 人';
 $string['reportall_link'] = '全部场次汇总报表';
 $string['reportone_link'] = '单场考勤报表';
+
+// 报表自身的控件。
+$string['report_clear'] = '清除';
+$string['report_nomatch'] = '没有符合条件的学生。';
+$string['report_search'] = '搜索';
+$string['report_search_placeholder'] = '姓名或学号';
+$string['report_showing'] = '显示 {$a->shown} / 共 {$a->total}';
+$string['report_sortasc'] = '按{$a}升序排列';
+$string['report_sortdesc'] = '按{$a}降序排列';
+$string['reportfilters'] = '报表排序、状态筛选与搜索';
+$string['reportfilters_desc'] = '开启后，考勤报表可以按姓名或学号排序、点击状态人数只看该状态的学生、按姓名或学号搜索。关闭后报表只显示完整名单，不提供这些操作。';
 $string['occurrence_short'] = '第 {$a} 场';
 $string['attendancecount'] = '出勤次数';
 $string['aggregate_note_all'] = '「成绩」列为该生所有已产生结果场次的平均分。';

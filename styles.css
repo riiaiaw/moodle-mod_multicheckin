@@ -109,3 +109,52 @@
     border-bottom: 1px solid var(--bs-border-color, #dee2e6);
     padding-bottom: 0.75rem;
 }
+
+/*
+ * The status badge the reader has clicked to filter the table.
+ *
+ * A ring drawn with box-shadow rather than a border or a different fill. The
+ * fill is the status - it is the same colour as the cell in the table, and it
+ * was chosen so a teacher can compare the two by colour. Repainting it to mean
+ * "selected" would ask them to unlearn that. A border would also change the
+ * badge's size, so selecting one would nudge the whole row sideways; a shadow
+ * costs no layout.
+ *
+ * The inner ring is the page background, so the outline stands clear of the
+ * badge even against a coloured table row.
+ */
+.badge.multicheckin-badge-selected {
+    box-shadow: 0 0 0 2px var(--bs-body-bg, #fff), 0 0 0 4px var(--bs-dark, #212529);
+}
+
+/*
+ * The two sortable headings in the report table.
+ *
+ * They are links, but they sit in a heading row and must keep reading as
+ * headings: inheriting the colour keeps them from turning into two blue words
+ * in a row of black ones, and the underline is left for the hover, which is
+ * where a reader looks to find out whether something is clickable.
+ */
+.multicheckin-sort-link {
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.multicheckin-sort-link:hover,
+.multicheckin-sort-link:focus {
+    color: inherit;
+    text-decoration: underline;
+}
+
+/*
+ * The search box: wide enough for a student number, narrow enough that the
+ * export button, the box and the summary can share a line on a laptop. The
+ * form itself is allowed to wrap - the toolbar is flex-wrap - so on a phone it
+ * takes the full width instead of squeezing the summary into an unreadable
+ * column.
+ */
+.multicheckin-report-q {
+    width: 14rem;
+    max-width: 100%;
+}

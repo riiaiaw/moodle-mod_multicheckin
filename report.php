@@ -45,12 +45,24 @@ use mod_multicheckin\photo_manager;
 use mod_multicheckin\point_name;
 use mod_multicheckin\qr_manager;
 use mod_multicheckin\report_bar;
+use mod_multicheckin\report_filter;
 use mod_multicheckin\session_manager;
 
 $id = required_param('id', PARAM_INT);
 $download = optional_param('download', '', PARAM_ALPHA);
 $sessionparam = optional_param('session', 0, PARAM_INT);
 $all = optional_param('all', 0, PARAM_INT);
+
+// The report's four controls. They arrive as GET parameters rather than as a
+// posted form so that "the five students who were absent" is a URL a teacher
+// can bookmark, send to a colleague, or put on the course page - and so that
+// this page stays a page with no JavaScript on it at all. Every value is
+// whitelisted in report_filter::normalise(); an unknown one falls back to the
+// default instead of refusing to load.
+$sortparam = optional_param('sort', '', PARAM_ALPHA);
+$dirparam = optional_param('dir', '', PARAM_ALPHA);
+$statusparam = optional_param('status', '', PARAM_ALPHA);
+$qparam = optional_param('q', '', PARAM_TEXT);
 
 $cm = get_coursemodule_from_id('multicheckin', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
@@ -185,17 +197,56 @@ foreach ($users as $user) {
     ];
 }
 
+// The controls on this report, cleaned into four values the rest of the page
+// can trust.
+//
+// The site setting is read here and nowhere else: with it off the filters are
+// the defaults, so the page behaves exactly as it did before the controls
+// existed. The parameters are still read - they are simply not honoured - which
+// means an old bookmark opens the full roster rather than an error.
+$controlsenabled = (bool) get_config('mod_multicheckin', 'reportfilters');
+$filters = report_filter::normalise($controlsenabled ? [
+    'sort' => $sortparam,
+    'dir' => $dirparam,
+    'status' => $statusparam,
+    'q' => $qparam,
+] : []);
+
 // What the roster adds up to.
 //
-// Counted from $rows, the array the table below is drawn from - not from a
-// second query. Two reads of the same thing are two chances to disagree, and a
-// summary that says five were absent while the table lists four is worse than
-// no summary at all: the reader has no way to tell which half lied.
-$summary = report_bar::count($rows);
+// Counted from $allrows - the full roster, before any filtering - not from a
+// second query and not from the visible subset. Two reasons, and they are not
+// the same reason:
+//
+//   * Two reads of the same thing are two chances to disagree. A summary that
+//     says five were absent while the table lists four is worse than no summary
+//     at all: the reader has no way to tell which half lied.
+//   * The badges are the filter's own controls. If they counted the filtered
+//     rows, clicking "absent 5" would set every other badge to 0 and take away
+//     the way back. The width of the current view is printed beside them as
+//     "showing X of Y" instead, so the two statements are both true.
+$allrows = $rows;
+$summary = report_bar::count($allrows);
+
+$rows = report_filter::sort(report_filter::filter($allrows, $filters), $filters);
 
 // CSV export.
+//
+// The file follows what is on screen: the same filter, the same order. A
+// teacher who has just clicked "absent" and then exports wants that list, and
+// handing them the whole class instead would make the click pointless. The
+// filter is written into the file name as well, because a file called
+// "Week 3_attendance_report.csv" that contains five of forty students is a file
+// that will be mistaken for the full record a month later.
 if ($download === 'csv') {
-    $filename = clean_filename($session->name . '_attendance_report.csv');
+    $suffix = '';
+    if ($filters['status'] !== report_filter::STATUS_ALL) {
+        $suffix .= '_' . $filters['status'];
+    }
+    if ($filters['q'] !== '') {
+        $suffix .= '_' . $filters['q'];
+    }
+    $filename = clean_filename($session->name . '_attendance_report' . $suffix . '.csv');
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
 
@@ -283,9 +334,29 @@ echo occurrence_helper::render_description($session, $context);
 // were missing today"), and putting it behind the table would mean scrolling
 // past forty names to find it. On a narrow screen the two halves wrap instead
 // of shrinking: a badge row squeezed to half a phone would be unreadable.
-$csvurl = new moodle_url($PAGE->url, ['download' => 'csv']);
+$csvparams = ['download' => 'csv'];
+if ($filters['sort'] !== '') {
+    $csvparams['sort'] = $filters['sort'];
+    $csvparams['dir'] = $filters['dir'];
+}
+if ($filters['status'] !== report_filter::STATUS_ALL) {
+    $csvparams['status'] = $filters['status'];
+}
+if ($filters['q'] !== '') {
+    $csvparams['q'] = $filters['q'];
+}
+$csvurl = new moodle_url($PAGE->url, $csvparams);
+
+// Three things on one row: the action this page offers, the box that narrows
+// what it acts on, and what the numbers add up to. With the controls switched
+// off the middle one is simply absent and the summary goes back to plain
+// badges, so that page is indistinguishable from the one before this feature.
+$baseurl = new moodle_url($PAGE->url);
 echo html_writer::div(
-    report_bar::export_button($csvurl) . report_bar::summary($summary),
+    report_bar::export_button($csvurl)
+        . ($controlsenabled ? report_bar::search_form($baseurl, $filters) : '')
+        . report_bar::summary($summary, $controlsenabled ? $baseurl : null,
+            $filters['status'], count($rows)),
     'd-flex flex-wrap align-items-center gap-3 mb-3 multicheckin-report-bar');
 
 // The QR panel sits at the top centre, above the roster table, so the teacher
@@ -294,12 +365,45 @@ echo html_writer::div(
 echo qr_manager::teacher_qr_panel((int) $cm->id, $session, $points);
 
 $table = new html_table();
+
+// A sortable head cell.
+//
+// The link has to carry every condition the page is currently using, not just
+// the sort key. "Filter to the absent students, then sort them by number" is
+// exactly the sequence a teacher performs, and a link that rebuilt the URL from
+// scratch would drop the filter on the first click - the page would appear to
+// forget what it was showing, which reads as a bug in the filter.
+$sorthead = function (string $key, string $label) use ($baseurl, $filters, $controlsenabled): string {
+    if (!$controlsenabled) {
+        return $label;
+    }
+    $active = ($filters['sort'] === $key);
+    $ascending = ($filters['dir'] === report_filter::DIR_ASC);
+    $params = [
+        'sort' => $key,
+        'dir' => ($active && $ascending) ? report_filter::DIR_DESC : report_filter::DIR_ASC,
+    ];
+    if ($filters['status'] !== report_filter::STATUS_ALL) {
+        $params['status'] = $filters['status'];
+    }
+    if ($filters['q'] !== '') {
+        $params['q'] = $filters['q'];
+    }
+
+    $arrow = $active ? ($ascending ? ' ▲' : ' ▼') : '';
+    $title = get_string($active && $ascending ? 'report_sortdesc' : 'report_sortasc',
+        'mod_multicheckin', $label);
+
+    return html_writer::link(new moodle_url($baseurl, $params), $label . $arrow,
+        ['class' => 'multicheckin-sort-link', 'title' => $title]);
+};
+
 $table->head = [
-    get_string('user'),
+    $sorthead(report_filter::SORT_NAME, get_string('user')),
     // The student number sits beside the name rather than at the far end of
     // the row: a sheet is read by matching a face to a number, and the two are
     // no use apart.
-    get_string('studentid', 'mod_multicheckin'),
+    $sorthead(report_filter::SORT_STUDENTID, get_string('studentid', 'mod_multicheckin')),
 ];
 foreach ($points as $p) {
     $table->head[] = format_string(point_name::display($p));
@@ -357,6 +461,12 @@ foreach ($rows as $r) {
         $line[] = html_writer::link($markurl, get_string('marks_edit', 'mod_multicheckin'));
     }
     $table->data[] = $line;
+}
+
+// An empty table with a row of headings looks like a page that failed to load.
+// Say it in words, and offer the way back.
+if (!$rows && $controlsenabled) {
+    echo $OUTPUT->notification(get_string('report_nomatch', 'mod_multicheckin'), 'info');
 }
 
 echo html_writer::table($table);
