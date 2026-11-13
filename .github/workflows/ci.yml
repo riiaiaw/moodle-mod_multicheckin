@@ -107,12 +107,22 @@ jobs:
         id: codechecker
         continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0 2>&1 | tee codechecker.log
+        shell: bash
+        # pipefail is not optional here. GitHub runs `bash -e {0}`, and without
+        # pipefail the exit status of `cmd | tee log` is tee's - always 0 - so
+        # the step would report success no matter what the checker said. This
+        # was written without it once and produced a green run that checked
+        # nothing.
+        run: |
+          set -o pipefail
+          moodle-plugin-ci phpcs --max-warnings 0 2>&1 | tee codechecker.log
 
       - name: Report code checker result
         if: ${{ !cancelled() && steps.codechecker.outcome != 'success' }}
         run: |
-          head -40 codechecker.log | while IFS= read -r line; do
+          # GitHub keeps only the first ten error annotations of a step, so
+          # the tail of a long report would be dropped without saying so.
+          head -10 codechecker.log | while IFS= read -r line; do
             [ -n "$line" ] && echo "::error title=phpcs::$line"
           done
           echo "::error title=phpcs::the step above failed; see the annotations"
@@ -122,12 +132,15 @@ jobs:
         id: phpdoc
         continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpdoc --max-warnings 0 2>&1 | tee phpdoc.log
+        shell: bash
+        run: |
+          set -o pipefail
+          moodle-plugin-ci phpdoc --max-warnings 0 2>&1 | tee phpdoc.log
 
       - name: Report PHPDoc result
         if: ${{ !cancelled() && steps.phpdoc.outcome != 'success' }}
         run: |
-          head -40 phpdoc.log | while IFS= read -r line; do
+          head -10 phpdoc.log | while IFS= read -r line; do
             [ -n "$line" ] && echo "::error title=phpdoc::$line"
           done
           echo "::error title=phpdoc::the step above failed; see the annotations"
