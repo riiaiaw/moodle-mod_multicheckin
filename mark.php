@@ -105,13 +105,10 @@ $PAGE->set_context($context);
 // teacher takes when a student signed in for somebody else: the whole session
 // Has to go, not one point.
 if ($action === 'clear' && confirm_sesskey()) {
-    // The photographs go first: they are filed under the log row id, so once
-    // the rows are gone there is nothing left to find them by.
-    \mod_multicheckin\photo_manager::delete_for_user((int) $session->id, (int) $user->id);
-    $DB->delete_records('multicheckin_log', [
-        'sessionid' => (int) $session->id,
-        'userid' => (int) $user->id,
-    ]);
+    // The whole removal - photographs, rows, and one event per row - lives in
+    // mark_manager::clear_user(), so this page and any other caller cannot end
+    // up doing three quarters of it.
+    mark_manager::clear_user($session, (int) $user->id);
     mark_manager::resync($session, (int) $user->id);
     redirect(
         $reporturl,
@@ -187,6 +184,10 @@ if ($data = $form->get_data()) {
     redirect($reporturl, $message, null, $type);
 }
 
+// The "delete every check-in" link carries data-multicheckin-confirm; the
+// shared module is what turns it into a question.
+$PAGE->requires->js_call_amd('mod_multicheckin/confirm', 'init');
+
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('marks_edit_heading', 'mod_multicheckin', fullname($user)));
 
@@ -215,7 +216,15 @@ if (!$points) {
         html_writer::link(
             $clearurl,
             get_string('marks_clear', 'mod_multicheckin'),
-            ['class' => 'btn btn-outline-danger btn-sm']
+            [
+                'class' => 'btn btn-outline-danger btn-sm',
+                // This one had no confirmation at all, and it deletes the
+                // student's whole session - check-ins and their photographs.
+                'data-multicheckin-confirm' => get_string(
+                    'marks_clear_confirm',
+                    'mod_multicheckin'
+                ),
+            ]
         ),
         'mt-3'
     );

@@ -114,9 +114,30 @@ if ($action === 'addpoint' && confirm_sesskey()) {
 if ($action === 'delpoint') {
     $pointid = required_param('pointid', PARAM_INT);
     require_sesskey();
-    \mod_multicheckin\photo_manager::delete_for_point((int) $pointid);
-    $DB->delete_records('multicheckin_log', ['pointid' => $pointid]);
-    $DB->delete_records('multicheckin_point', ['id' => $pointid, 'sessionid' => $session->id]);
+
+    // The point has to belong to the occurrence this page is showing, and that
+    // is checked before anything is deleted. pointid is an auto-increment
+    // integer, so a teacher with mod/multicheckin:manage on one activity could
+    // otherwise pass an id from another one: the photographs and every check-in
+    // log of that point were deleted by pointid alone, while the point row
+    // itself survived because only its delete carried the sessionid. The victim
+    // sees a point that is still there and records that are gone.
+    $point = $DB->get_record(
+        'multicheckin_point',
+        ['id' => $pointid, 'sessionid' => $session->id],
+        '*',
+        MUST_EXIST
+    );
+
+    \mod_multicheckin\photo_manager::delete_for_point((int) $point->id, (int) $session->id);
+    $DB->delete_records('multicheckin_log', [
+        'pointid' => (int) $point->id,
+        'sessionid' => (int) $session->id,
+    ]);
+    $DB->delete_records('multicheckin_point', [
+        'id' => (int) $point->id,
+        'sessionid' => (int) $session->id,
+    ]);
     redirect($PAGE->url, get_string('point_deleted', 'mod_multicheckin'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
@@ -132,7 +153,9 @@ if ($action === 'recompute') {
 // Handle reminder send (manual trigger for testing).
 if ($action === 'notifytest') {
     require_sesskey();
-    $count = \mod_multicheckin\notify_manager::send_due_reminders();
+    // Scoped to the activity whose page this button is on. Passing nothing sent
+    // the reminders of every course on the site.
+    $count = \mod_multicheckin\notify_manager::send_due_reminders(null, (int) $template->id);
     redirect($PAGE->url, get_string('reminders_sent', 'mod_multicheckin', $count), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
@@ -182,7 +205,13 @@ if ($data = $editform->get_data()) {
             'qrcode' => empty($data->{$key . '_qrcode'}) ? 0 : 1,
             'qronly' => empty($data->{$key . '_qronly'}) ? 0 : 1,
             'notify' => empty($data->{$key . '_notify'}) ? 0 : 1,
-            'password' => $data->{$key . '_password'},
+            // An empty box means "leave it alone". The field is a password
+            // field, so it is never pre-filled and cannot tell "unchanged" from
+            // "cleared" any other way; taking the empty string literally would
+            // wipe the password every time the teacher edited a window.
+            'password' => (string) ($data->{$key . '_password'} ?? '') !== ''
+                ? $data->{$key . '_password'}
+                : (string) $p->password,
             'timemodified' => time(),
         ];
         // Ensure a signing key exists whenever QR is switched on - and also

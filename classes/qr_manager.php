@@ -185,6 +185,32 @@ class qr_manager {
     }
 
     /**
+     * Whether this request was started by another site.
+     *
+     * passive_embed() only recognises a subresource load. A link, a form or a
+     * redirect on someone else's page is a top-level navigation, and to
+     * SEC_FETCH_DEST that looks exactly like a scan. SEC_FETCH_SITE tells them
+     * apart: a scan is 'none' because nothing initiated it from the web, and a
+     * request started by another origin is 'cross-site'. Without this check a
+     * page that navigates every visitor to a copied QR URL signed in the whole
+     * class - the URL carries a valid token, so the token alone is not evidence
+     * that a person pointed a camera at the teacher's screen.
+     *
+     * A missing header (an old browser) is allowed: refusing it would break the
+     * scan for those users and gain nothing, since the header can be forged
+     * anyway - this raises the cost, it does not prove intent.
+     *
+     * @return bool
+     */
+    public static function cross_site_navigation(): bool {
+        $site = isset($_SERVER['HTTP_SEC_FETCH_SITE'])
+            ? strtolower(trim((string) $_SERVER['HTTP_SEC_FETCH_SITE']))
+            : '';
+
+        return $site === 'cross-site';
+    }
+
+    /**
      * Current rotation slot number.
      *
      * @param int $now Current timestamp.
@@ -321,7 +347,7 @@ class qr_manager {
         );
 
         // Auto-refresh each QR image on its own schedule (token rotation).
-        $panel .= self::refresh_script();
+        self::require_panel();
 
         return $panel;
     }
@@ -356,8 +382,9 @@ class qr_manager {
             'data-qrtarget' => self::window_name($session),
         ]);
 
-        return \html_writer::div($button, 'd-inline-block')
-            . self::window_script();
+        self::require_panel();
+
+        return \html_writer::div($button, 'd-inline-block');
     }
 
     /**
@@ -479,7 +506,9 @@ class qr_manager {
             ) . $html;
         }
 
-        return $html . self::refresh_script();
+        self::require_panel();
+
+        return $html;
     }
 
     /**
@@ -504,7 +533,10 @@ class qr_manager {
 
         $attributes = [
             'src' => $qrurl->out(false),
-            'alt' => 'QR',
+            // Three check-in points mean three codes on one screen. All of them
+            // said "QR", so a screen reader could not tell which code opened
+            // which window - the only way to know was to look.
+            'alt' => get_string('qr_alt', 'mod_multicheckin', format_string(point_name::display($point))),
             'class' => 'border p-1 multicheckin-qrimg',
         ];
         // Refresh a little faster than the token rotates, so the code on
@@ -515,92 +547,31 @@ class qr_manager {
     }
 
     /**
-     * Shared auto-refresh for every rotating QR image on a page.
+     * Ask the page to start the QR panel behaviour.
      *
-     * The inline panel and the standalone window draw the same
-     * `.multicheckin-qrimg`, and the interval has to match the token rotation
-     * in both. Kept in one place so the two cannot drift apart and leave one of
-     * them serving a code that has already expired.
+     * Called from wherever a code or an "open" button is rendered, which can be
+     * more than once on a page. The static guard is what keeps that to a single
+     * init: two inits would mean two intervals requesting the same code, and a
+     * second click handler.
      *
-     * An image without the attribute is left alone rather than refetched on an
-     * interval parsed out of nothing: parseInt yields NaN, setInterval treats
-     * that as zero and would spin as fast as the browser allows.
+     * A page that is not a moodle_page (a unit test, a CLI script) has nothing
+     * to register the requirement on, so it simply returns.
      *
-     * @return string HTML script tag.
+     * @return void
      */
-    private static function refresh_script(): string {
-        return \html_writer::tag('script', "
-(function() {
-    document.querySelectorAll('.multicheckin-qrimg').forEach(function(img) {
-        var ms = parseInt(img.getAttribute('data-refresh'), 10);
-        if (!ms || ms <= 0) { return; }
-        var base = img.src.split('&_ts=')[0];
-        var timer = null;
-        var tick = function() {
-            img.src = base + '&_ts=' + Date.now();
-        };
-        var start = function() {
-            if (timer === null) {
-                timer = setInterval(tick, ms);
-            }
-        };
-        var stop = function() {
-            if (timer !== null) {
-                clearInterval(timer);
-                timer = null;
-            }
-        };
-        // A code on a projector stays up for a whole lesson, and this script
-        // re-requests it every few seconds. Each request is a full Moodle
-        // bootstrap and a freshly encoded PNG, so a class period costs a couple
-        // of hundred of them. While the tab is in the background the projector
-        // is showing something else and every one of those is wasted.
-        //
-        // The tick() on the way back is the part that matters. The token rotated
-        // while the tab was hidden, so the frame still on screen has expired by
-        // the time the teacher switches back; starting the interval and waiting
-        // one more round would put a dead code in front of the class for the
-        // first ten seconds.
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                stop();
-            } else {
-                tick();
-                start();
-            }
-        });
-        start();
-    });
-})();
-", ['type' => 'text/javascript']);
-    }
+    private static function require_panel(): void {
+        global $PAGE;
 
-    /**
-     * Shared click handler for the "open the codes" buttons.
-     *
-     * Delegated from the document rather than bound per button, and guarded so
-     * the script may appear on a page twice (the button is rendered on both the
-     * view and the report page) without installing two handlers. A named window
-     * is reused, which is what stops repeated clicks from littering the desktop
-     * with copies of the same code.
-     *
-     * @return string HTML script tag.
-     */
-    private static function window_script(): string {
-        return \html_writer::tag('script', "
-(function() {
-    if (window.multicheckinQROpen) { return; }
-    window.multicheckinQROpen = function(url, name) {
-        var win = window.open(url, name, 'width=760,height=900,resizable=yes,scrollbars=yes');
-        if (win) { win.focus(); }
-    };
-    document.addEventListener('click', function(e) {
-        var btn = e.target.closest ? e.target.closest('.multicheckin-qropen') : null;
-        if (!btn) { return; }
-        e.preventDefault();
-        window.multicheckinQROpen(btn.getAttribute('data-qrurl'), btn.getAttribute('data-qrtarget'));
-    });
-})();
-", ['type' => 'text/javascript']);
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+
+        if (!$PAGE instanceof \moodle_page) {
+            return;
+        }
+
+        $PAGE->requires->js_call_amd('mod_multicheckin/qr_panel', 'init');
     }
 }

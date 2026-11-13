@@ -100,15 +100,7 @@ class grade_helper {
      * @return bool True on success.
      */
     public static function update_grades(\stdClass $session, int $userid = 0): bool {
-        global $CFG;
-
-        // Grade_update() lives in gradelib.php. A page request has usually.
-        // pulled that in already; a scheduled task has not, and the test
-        // harness supplies its own recorder instead, so only load it when it is
-        // Genuinely missing.
-        if (!function_exists('grade_update')) {
-            require_once($CFG->libdir . '/gradelib.php');
-        }
+        self::require_gradelib();
 
         // The grade item belongs to the activity, not to one of its
         // occurrences. Pushing with an occurrence id would key grade_update() to
@@ -137,6 +129,14 @@ class grade_helper {
             $items[$u] = $item;
         }
 
+        // Positional arguments, and every position matters. Core's signature is
+        // grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance,
+        // $itemnumber, $grades, $itemdetails, $isbulkupdate) - the grades array
+        // is the SEVENTH. Handing it over one place late puts it in
+        // $itemdetails, where only ten item keys survive and userid is not one
+        // of them, so no grade is written and the call still reports success.
+        // That is how this shipped for several versions with the gradebook
+        // permanently empty while every page looked fine.
         grade_update(
             'mod/multicheckin',
             $session->course,
@@ -144,10 +144,98 @@ class grade_helper {
             'multicheckin',
             $session->id,
             0,
-            null,
-            $items
+            $items,
+            self::item_details($session)
         );
 
         return true;
+    }
+
+    /**
+     * The grade item definition this activity pushes.
+     *
+     * One definition, two callers: update_grades() above and the
+     * multicheckin_grade_item_update() callback in lib.php. Moodle's
+     * grade_update_mod_grades() looks for that callback beside
+     * multicheckin_update_grades() and, finding only one of the pair, debugs
+     * "You have declared one of ... but not both" and pushes nothing - and that
+     * is the path both the gradebook's recalculate and the course reset take.
+     *
+     * @param \stdClass $session Instance record (the template).
+     * @return array Item details in the shape grade_update() expects.
+     */
+    public static function item_details(\stdClass $session): array {
+        self::require_gradelib();
+
+        $name = format_string($session->name ?? '');
+        $max = (float) ($session->grade ?: 0);
+        if ($max <= 0) {
+            // An activity that is not graded has no grade item. gradelib treats
+            // GRADE_TYPE_NONE as "nothing to build" and returns before creating
+            // one, which is what a zero-maximum item would otherwise become: a
+            // blank row in every course gradebook.
+            return ['itemname' => $name, 'gradetype' => GRADE_TYPE_NONE];
+        }
+
+        return [
+            'itemname' => $name,
+            'gradetype' => GRADE_TYPE_VALUE,
+            'grademax' => $max,
+            'grademin' => 0,
+        ];
+    }
+
+    /**
+     * Create or refresh the grade item, optionally pushing grades with it.
+     *
+     * This is the body of lib.php's multicheckin_grade_item_update() callback.
+     * It belongs here rather than there for the same reason update_grades()
+     * does: grade_update_mod_grades() runs from cron and from the gradebook,
+     * where lib.php was never included.
+     *
+     * @param \stdClass $session Instance record (the template).
+     * @param array|string|null $grades Grades to push, or the string 'reset'.
+     * @return int One of the GRADE_UPDATE_* status codes.
+     */
+    public static function grade_item_update(\stdClass $session, $grades = null): int {
+        self::require_gradelib();
+
+        $session = session_manager::get_template_for_session($session) ?: $session;
+
+        $details = self::item_details($session);
+        if ($grades === 'reset') {
+            // A course reset deletes the grades and keeps the item, which core
+            // expresses as $itemdetails['reset'] - not as a cleared $grades.
+            $details['reset'] = true;
+            $grades = null;
+        }
+
+        return grade_update(
+            'mod/multicheckin',
+            $session->course,
+            'mod',
+            'multicheckin',
+            $session->id,
+            0,
+            $grades,
+            $details
+        );
+    }
+
+    /**
+     * Make sure gradelib.php is loaded.
+     *
+     * A page request has usually pulled it in already; a scheduled task has not,
+     * and the test harness supplies its own grade_update() instead, so only
+     * load it when it is genuinely missing.
+     *
+     * @return void
+     */
+    private static function require_gradelib(): void {
+        global $CFG;
+
+        if (!function_exists('grade_update')) {
+            require_once($CFG->libdir . '/gradelib.php');
+        }
     }
 }

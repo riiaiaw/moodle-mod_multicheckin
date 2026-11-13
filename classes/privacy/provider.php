@@ -504,20 +504,26 @@ class provider implements
                 SQL_PARAMS_NAMED,
                 'delsess'
             );
-            $params = array_merge($tableparams, ['deluser' => (int) $user->id]);
-            foreach (self::USER_TABLES as $table) {
-                $DB->delete_records_select(
-                    $table,
-                    "sessionid {$tablesql} AND userid = :deluser",
-                    $params
-                );
-            }
+            // Files first, rows second. photo_manager::delete_for_user() finds
+            // the file itemids by reading the student's own log rows, so
+            // deleting those rows before asking for the files - which is what
+            // this did - left every photograph in the data directory with
+            // nothing left to name it. The erasure request reported success and
+            // the pictures stayed.
             foreach (self::session_ids((int) $cm->instance) as $sessionid) {
                 photo_manager::delete_for_user($sessionid, (int) $user->id);
                 leave_manager::delete_for_user($sessionid, (int) $user->id);
                 $DB->delete_records(
                     'multicheckin_pass',
                     ['sessionid' => $sessionid, 'userid' => (int) $user->id]
+                );
+            }
+            $params = array_merge($tableparams, ['deluser' => (int) $user->id]);
+            foreach (self::USER_TABLES as $table) {
+                $DB->delete_records_select(
+                    $table,
+                    "sessionid {$tablesql} AND userid = :deluser",
+                    $params
                 );
             }
         }
@@ -548,15 +554,8 @@ class provider implements
             SQL_PARAMS_NAMED,
             'delsess'
         );
-        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'deluser');
-        $params = array_merge($tableparams, $inparams);
-        foreach (self::USER_TABLES as $table) {
-            $DB->delete_records_select(
-                $table,
-                "sessionid {$tablesql} AND userid {$insql}",
-                $params
-            );
-        }
+        // Same order as delete_data_for_user(): the photographs are located
+        // through the log rows, so they have to go before the rows do.
         foreach (self::session_ids((int) $cm->instance) as $sessionid) {
             foreach ($userids as $uid) {
                 photo_manager::delete_for_user($sessionid, (int) $uid);
@@ -566,6 +565,15 @@ class provider implements
                     ['sessionid' => $sessionid, 'userid' => (int) $uid]
                 );
             }
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'deluser');
+        $params = array_merge($tableparams, $inparams);
+        foreach (self::USER_TABLES as $table) {
+            $DB->delete_records_select(
+                $table,
+                "sessionid {$tablesql} AND userid {$insql}",
+                $params
+            );
         }
     }
 }

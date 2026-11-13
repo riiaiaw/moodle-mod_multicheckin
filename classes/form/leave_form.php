@@ -103,6 +103,8 @@ class leave_form extends \moodleform {
      * @return array Errors.
      */
     public function validation($data, $files): array {
+        global $USER;
+
         $errors = parent::validation($data, $files);
 
         $draftid = (int) ($data['leavefile'] ?? 0);
@@ -110,10 +112,20 @@ class leave_form extends \moodleform {
             return $errors;
         }
 
-        $context = $this->_customdata['context'];
+        // Draft files belong to the uploader, not to the activity. A filepicker
+        // stores them under context_user::instance($USER->id) with component
+        // 'user' and area 'draft', which is the only place they can be; asking
+        // for them under the module context returned an empty list every time,
+        // so the check below never examined a single file and the accepted-type
+        // list stayed a pure UI hint. The itemid is not enough on its own: the
+        // lookup is keyed on context, component, area AND itemid.
+        //
+        // $USER is the person submitting, which is the person whose draft the
+        // itemid names - a draft itemid cannot be used across users.
+        $usercontext = \context_user::instance($USER->id);
         $fs = get_file_storage();
         $accepted = leave_manager::accepted_types();
-        $draftfiles = $fs->get_area_files($context->id, 'user', 'draft', $draftid, 'id', false);
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $draftid, 'id', false);
 
         foreach ($draftfiles as $file) {
             $extension = '.' . \core_text::strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION));

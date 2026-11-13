@@ -50,6 +50,14 @@ class checkin_recorded extends \core\event\base {
      * @return string
      */
     public function get_description(): string {
+        // The same event now covers a record the teacher typed in. In that case
+        // the actor is the teacher and the student is the related user, so the
+        // sentence "the user with id X checked in" would name the wrong person.
+        if (!empty($this->other['manual'])) {
+            return "The user with id '{$this->userid}' recorded a check-in for the user " .
+                "with id '{$this->relateduserid}' at point with id '{$this->other['pointid']}' " .
+                "in the multicheckin session with id '{$this->other['sessionid']}'.";
+        }
         return "The user with id '{$this->userid}' checked in at point " .
             "with id '{$this->other['pointid']}' in the multicheckin session " .
             "with id '{$this->other['sessionid']}'.";

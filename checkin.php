@@ -112,7 +112,11 @@ $viewurl = new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]);
 // the browser reports the request as a passive subresource load - the shape the
 // <img> attack takes - while a scan, which is a navigation, is unaffected.
 if ($method === 'qr') {
-    if (qr_manager::passive_embed()) {
+    // Two refusals, for two different shapes of the same abuse. passive_embed()
+    // catches the <img> load; cross_site_navigation() catches a link, form or
+    // redirect on another origin, which is a top-level navigation and therefore
+    // indistinguishable from a scan by fetch destination alone.
+    if (qr_manager::passive_embed() || qr_manager::cross_site_navigation()) {
         redirect(
             $viewurl,
             get_string('qr_scan_in_browser', 'mod_multicheckin'),
@@ -249,36 +253,20 @@ if (!has_capability('mod/multicheckin:manage', $context)) {
         $PAGE->set_heading(format_string($course->fullname));
         $PAGE->set_context($context);
 
-        $cfg = json_encode([
-            'base' => $geobase,
-            'locating' => get_string('geo_locating', 'mod_multicheckin'),
-        ]);
+        $cfg = json_encode(['base' => $geobase]);
 
         echo $OUTPUT->header();
         echo html_writer::div(
             get_string('geo_locating', 'mod_multicheckin'),
             'alert alert-info multicheckin-geobridge'
         );
-        echo html_writer::tag('script', "
-(function() {
-    var cfg = $cfg;
-    function finish(lat, lng, acc) {
-        var url = cfg.base;
-        if (lat !== null && lat !== undefined) {
-            url += '&geolat=' + encodeURIComponent(lat)
-                 + '&geolng=' + encodeURIComponent(lng)
-                 + (acc ? '&geoacc=' + encodeURIComponent(acc) : '');
-        }
-        window.location.replace(url);
-    }
-    if (!navigator.geolocation) { finish(null); return; }
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        var c = pos.coords;
-        finish(c.latitude, c.longitude, c.accuracy);
-    }, function() { finish(null); },
-    {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
-})();
-", ['type' => 'text/javascript']);
+        // The data rides in an attribute and the behaviour lives in
+        // amd/src/geo_bridge.js. An inline script cannot be covered by a CSP
+        // hash or nonce, so one tightened site policy used to leave the fence
+        // permanently unable to get a position - and the student staring at
+        // "locating" forever.
+        echo html_writer::div('', 'd-none', 'multicheckin-geo-bridge-config', ['data-config' => $cfg]);
+        $PAGE->requires->js_call_amd('mod_multicheckin/geo_bridge', 'init');
         echo $OUTPUT->footer();
         exit;
     }
@@ -379,11 +367,15 @@ if (!has_capability('mod/multicheckin:manage', $context) && photo_manager::is_re
 }
 
 // Record the check-in.
-session_manager::record_checkin($session, $point, (int) $USER->id, $method);
+$logid = session_manager::record_checkin($session, $point, (int) $USER->id, $method);
 
 $event = \mod_multicheckin\event\checkin_recorded::create([
     'context' => $context,
-    'objectid' => 0,
+    // The row this event is about. The class declares
+    // objecttable = 'multicheckin_log', so 0 is not "no object": it is an id
+    // that matches nothing, which leaves the log report unable to link the
+    // event to the check-in and get_objectid_mapping() with nothing to map.
+    'objectid' => (int) $logid,
     'other' => ['pointid' => (int) $point->id, 'sessionid' => (int) $session->id],
 ]);
 $event->trigger();

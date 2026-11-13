@@ -46,6 +46,14 @@ class place_manager {
     /** @var int Longest name accepted, matching the char(255) column. */
     public const NAME_MAX = 255;
 
+    /**
+     * @var float How close two coordinates have to be to count as the same room.
+     *
+     * About 1e-7 degrees, i.e. roughly 1.1 cm at the equator - the comparisons in
+     * usage_count() and usage_counts() have to agree, so the number is named once.
+     */
+    protected const USAGE_TOLERANCE = 0.0000001;
+
     /** @var int Minimum radius accepted, in metres. */
     public const RADIUS_MIN = 10;
 
@@ -286,20 +294,63 @@ class place_manager {
         $lat = (float) $place->latitude;
         $lng = (float) $place->longitude;
 
-        // About 1e-7 degrees, i.e. roughly 1.1 cm at the equator.
-        $tolerance = 0.0000001;
-
         $sql = "SELECT COUNT(id)
                   FROM {multicheckin}
                  WHERE geolat BETWEEN :lat1 AND :lat2
                    AND geolng BETWEEN :lng1 AND :lng2";
 
         return (int) $DB->count_records_sql($sql, [
-            'lat1' => $lat - $tolerance,
-            'lat2' => $lat + $tolerance,
-            'lng1' => $lng - $tolerance,
-            'lng2' => $lng + $tolerance,
+            'lat1' => $lat - self::USAGE_TOLERANCE,
+            'lat2' => $lat + self::USAGE_TOLERANCE,
+            'lng1' => $lng - self::USAGE_TOLERANCE,
+            'lng2' => $lng + self::USAGE_TOLERANCE,
         ]);
+    }
+
+    /**
+     * How many activities use each of these places, in one pass.
+     *
+     * The library page rendered a hundred rooms and ran a hundred COUNTs, each of
+     * them scanning {multicheckin} for a BETWEEN range - the page a teacher opens
+     * to tidy the room list was the slowest one in the plugin. The table holds one
+     * row per activity and a handful of columns, so reading the coordinates once
+     * and matching here is both simpler and cheaper.
+     *
+     * @param array $places Place records.
+     * @return array Place id => usage count.
+     */
+    public static function usage_counts(array $places): array {
+        global $DB;
+
+        if (!$places) {
+            return [];
+        }
+
+        $rows = $DB->get_records_sql(
+            "SELECT id, geolat, geolng
+               FROM {multicheckin}
+              WHERE geolat IS NOT NULL AND geolng IS NOT NULL"
+        );
+
+        $out = [];
+        foreach ($places as $place) {
+            $lat = (float) $place->latitude;
+            $lng = (float) $place->longitude;
+            $count = 0;
+            foreach ($rows as $row) {
+                // The same tolerance usage_count() uses, so the badge and the
+                // warning shown when deleting a room cannot disagree.
+                if (
+                    abs((float) $row->geolat - $lat) <= self::USAGE_TOLERANCE
+                    && abs((float) $row->geolng - $lng) <= self::USAGE_TOLERANCE
+                ) {
+                    $count++;
+                }
+            }
+            $out[(int) $place->id] = $count;
+        }
+
+        return $out;
     }
 
     /**
@@ -411,20 +462,21 @@ class place_manager {
     }
 
     /**
-     * Whether the current user may delete places specifically.
+     * Whether the current user may delete places.
      *
-     * Separated from {@see can_edit()} so a site can let teachers add rooms but
-     * reserve deletion for administrators, which is a common arrangement once
-     * the library has grown.
+     * There is exactly one capability behind the shared room library -
+     * mod/multicheckin:manageplaces - so this answers the same question as
+     * {@see can_edit()}. It is kept as its own name because deletion is the one
+     * action a site may later want to reserve, and this is the only place that
+     * decision has to change: add the capability to db/access.php and check it
+     * here. Until that happens, saying the two are separate would be a promise
+     * the code does not keep.
      *
      * @param \context|null $context Context to check in, defaults to system.
      * @return bool
      */
     public static function can_delete(?\context $context = null): bool {
-        if ($context === null) {
-            $context = \context_system::instance();
-        }
-        return has_capability('mod/multicheckin:manageplaces', $context);
+        return self::can_edit($context);
     }
 
     /**

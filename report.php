@@ -289,6 +289,19 @@ if ($download === 'csv') {
     ]);
     fputcsv($out, $header);
 
+    // A name is user data, and a spreadsheet is a program. Excel and LibreOffice
+    // both treat a cell starting with = + - @ (or a tab/CR) as a formula, so a
+    // student whose name is "=HYPERLINK(\"http://x\",\"open\")" gets it executed
+    // on the teacher's machine the moment the export is opened. A leading
+    // apostrophe is the standard neutralisation: the value stays readable and
+    // stops being code.
+    $neutralise = static function ($value) {
+        if (!is_string($value) || $value === '') {
+            return $value;
+        }
+        return strpbrk($value[0], "=+-@\t\r") === false ? $value : "'" . $value;
+    };
+
     foreach ($rows as $r) {
         $line = [$r->user, $r->username];
         foreach ($points as $p) {
@@ -311,7 +324,7 @@ if ($download === 'csv') {
             $r->earlymin,
             $r->points,
         ]);
-        fputcsv($out, $line);
+        fputcsv($out, array_map($neutralise, $line));
     }
     fclose($out);
     exit;
@@ -500,7 +513,10 @@ if (!$rows && $controlsenabled) {
     echo $OUTPUT->notification(get_string('report_nomatch', 'mod_multicheckin'), 'info');
 }
 
-echo html_writer::table($table);
+// Fourteen columns with a name, a student id and six check-in points do not fit
+// a laptop. Without this the whole page scrolls sideways and takes the filter
+// bar out of view with it.
+echo html_writer::div(html_writer::table($table), 'table-responsive');
 
 // The options toolbar.
 //

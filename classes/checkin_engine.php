@@ -488,8 +488,25 @@ class checkin_engine {
         if ($existing) {
             $record->id = $existing->id;
             $DB->update_record('multicheckin_result', $record);
-        } else {
-            $record->id = $DB->insert_record('multicheckin_result', $record);
+            return;
+        }
+
+        // The (sessionid, userid) pair is UNIQUE. Two requests can both look,
+        // both find nothing, and both insert - a student checking in at the
+        // moment the settling task reaches the same student, for instance. The
+        // second insert throws, and uncaught that exception escapes
+        // finalise_sessions and every occurrence queued behind it is left
+        // unsettled. Losing the race is not a failure: the row it wanted to
+        // write now exists, so the answer is to write over it.
+        try {
+            $DB->insert_record('multicheckin_result', $record);
+        } catch (\dml_write_exception $e) {
+            $winner = $DB->get_record('multicheckin_result', [
+                'sessionid' => $sessionid,
+                'userid' => $userid,
+            ], 'id', MUST_EXIST);
+            $record->id = (int) $winner->id;
+            $DB->update_record('multicheckin_result', $record);
         }
     }
 

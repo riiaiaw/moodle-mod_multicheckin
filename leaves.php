@@ -100,6 +100,21 @@ $PAGE->set_context($context);
 if ($action !== '' && $userid > 0 && $actsessionid > 0 && confirm_sesskey()) {
     $targetsession = session_manager::resolve_session($template, $actsessionid);
     if ($targetsession && (int) $targetsession->id === $actsessionid) {
+        // The session is verified against this activity; the student was not.
+        // A user id is just a number, so a teacher could name anyone on the
+        // site and have the page act on "their" leave in this session. What the
+        // action may touch is exactly one row - a leave this student filed for
+        // this session - so that is what is checked. is_enrolled() would be the
+        // wrong test here: a student who has since left the course still owns
+        // the leave the teacher is clearing up.
+        $hasleave = $DB->record_exists('multicheckin_leave', [
+            'sessionid' => (int) $targetsession->id,
+            'userid' => (int) $userid,
+        ]);
+        if (!$hasleave) {
+            throw new \moodle_exception('invaliduser');
+        }
+
         if ($action === 'review') {
             if (leave_manager::set_reviewed($targetsession, $userid, true, (int) $USER->id)) {
                 redirect(
@@ -154,6 +169,11 @@ $userids = array_map(fn($row) => (int) $row->userid, $leaves);
 $sessionids = array_map(fn($row) => (int) $row->sessionid, $leaves);
 $users = $userids ? $DB->get_records_list('user', 'id', $userids) : [];
 $sessionrows = $sessionids ? $DB->get_records_list('multicheckin', 'id', $sessionids) : [];
+
+// The per-row "clear" links carry data-multicheckin-confirm, which the shared
+// module turns into a question. Loading it here rather than inlining an
+// onclick keeps the page working under a strict CSP.
+$PAGE->requires->js_call_amd('mod_multicheckin/confirm', 'init');
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('leaves_heading', 'mod_multicheckin', format_string($template->name)));
@@ -265,9 +285,9 @@ foreach ($leaves as $leave) {
     ]);
     $actions[] = html_writer::link($clearurl, get_string('leave_clear_link', 'mod_multicheckin'), [
         'class' => 'small text-danger',
-        'onclick' => 'return confirm(' . json_encode(
-            get_string('leave_clear_confirm', 'mod_multicheckin')
-        ) . ');',
+        // Same mechanism as every other destructive link in the plugin, and the
+        // one an inline onclick loses first when a site tightens its CSP.
+        'data-multicheckin-confirm' => get_string('leave_clear_confirm', 'mod_multicheckin'),
     ]);
 
     $table->data[] = [

@@ -179,8 +179,12 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
         );
 
         // Annotations.
-
-        $multicheckin->annotate_ids('user', 'userid');
+        //
+        // No annotation on $multicheckin itself: that element is the activity
+        // and its occurrences, and the table has no userid column. The call
+        // that used to sit here annotated a column that does not exist, which
+        // either recorded a mapping for nothing or failed the backup outright.
+        // Everything below is a row that genuinely belongs to one user.
 
         $log->annotate_ids('user', 'userid');
         $geolog->annotate_ids('user', 'userid');

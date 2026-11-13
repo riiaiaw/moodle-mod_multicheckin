@@ -131,7 +131,7 @@ $ctable->data = [[
         ? count($config['ranges'])
         : get_string('audit_ranges_unset', 'mod_multicheckin'),
 ]];
-echo html_writer::table($ctable);
+echo html_writer::div(html_writer::table($ctable), 'table-responsive');
 
 // The four ways a configured fence ends up judging nothing. Stated up front,
 // because each of them produces a log full of "allowed" that looks like a
@@ -149,6 +149,14 @@ if ($config['needsip'] && !$config['ranges']) {
 if ($config['mode'] !== geo_manager::MODE_NONE && !$config['enforceqr']) {
     $notices[] = get_string('audit_notice_qr', 'mod_multicheckin');
 }
+if ($config['needsgps']) {
+    // A GPS fence is judged on a number the student's browser read from the
+    // device and carried in the request. The page is used to decide whether
+    // attendance was genuine, so it has to say out loud what that number is
+    // worth rather than let two modes sit side by side looking equally
+    // authoritative.
+    $notices[] = get_string('audit_notice_selfreported', 'mod_multicheckin');
+}
 foreach ($notices as $notice) {
     echo $OUTPUT->notification($notice, \core\output\notification::NOTIFY_WARNING, false);
 }
@@ -163,7 +171,7 @@ $stable->head = [
     get_string('audit_rejected', 'mod_multicheckin'),
 ];
 $stable->data = [[$summary['total'], $summary['allowed'], $summary['rejected']]];
-echo html_writer::table($stable);
+echo html_writer::div(html_writer::table($stable), 'table-responsive');
 
 if ($summary['reasons']) {
     $rtable = new html_table();
@@ -179,7 +187,7 @@ if ($summary['reasons']) {
             $count,
         ];
     }
-    echo html_writer::table($rtable);
+    echo html_writer::div(html_writer::table($rtable), 'table-responsive');
 }
 
 if ($distances['count']) {
@@ -271,7 +279,7 @@ if (!$fetched['rows']) {
         ];
     }
 
-    echo html_writer::table($mtable);
+    echo html_writer::div(html_writer::table($mtable), 'table-responsive');
 
     if ($fetched['pages'] > 1) {
         $pagelinks = [];

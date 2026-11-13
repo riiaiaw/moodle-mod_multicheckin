@@ -360,6 +360,10 @@ $table->head = [
 ];
 $table->attributes['class'] = 'generaltable';
 
+// One query for the whole list. This used to call usage_count() inside the
+// loop, which meant a COUNT with a BETWEEN scan of {multicheckin} per row.
+$usages = place_manager::usage_counts($places);
+
 foreach ($places as $place) {
     $editurl = new moodle_url($pageurl, ['action' => 'edit', 'placeid' => $place->id]);
     $deleteurl = new moodle_url($pageurl, ['action' => 'delete', 'placeid' => $place->id]);
@@ -372,7 +376,7 @@ foreach ($places as $place) {
         );
     }
 
-    $usage = place_manager::usage_count($place);
+    $usage = $usages[(int) $place->id] ?? 0;
     $usagetext = $usage > 0
         ? html_writer::span(
             get_string('placeusecount', 'mod_multicheckin', $usage),

@@ -311,6 +311,12 @@ class mark_manager {
                         'pointid' => $pointid,
                         'userid' => $userid,
                     ]);
+                    // One event per row that actually existed. The delete above
+                    // is a bulk statement, so the ids have to come from what was
+                    // read before it ran.
+                    foreach ($existing as $row) {
+                        self::fire_event($session, $pointid, $userid, (int) $row->id, true);
+                    }
                     $totals['removed']++;
                 } else {
                     $totals['unchanged']++;
@@ -439,7 +445,7 @@ class mark_manager {
     protected static function insert_log(\stdClass $session, int $pointid, int $userid, int $time): int {
         global $DB;
 
-        return (int) $DB->insert_record('multicheckin_log', (object) [
+        $logid = (int) $DB->insert_record('multicheckin_log', (object) [
             'pointid' => $pointid,
             'sessionid' => (int) $session->id,
             'userid' => $userid,
@@ -447,6 +453,97 @@ class mark_manager {
             'ip' => null,
             'method' => self::METHOD_MANUAL,
         ]);
+
+        // A record the teacher wrote is still a check-in record, and the log is
+        // supposed to show what happened to this table. Without this, half the
+        // rows carried an event and half did not, so "the student checked in"
+        // and "a teacher typed it in" were indistinguishable afterwards.
+        self::fire_event($session, $pointid, $userid, $logid, false);
+
+        return $logid;
+    }
+
+    /**
+     * Fire the event for a check-in row this class wrote or removed.
+     *
+     * @param \stdClass $session Session record.
+     * @param int $pointid Point id.
+     * @param int $userid Student id.
+     * @param int $logid Log row id.
+     * @param bool $removed True for a deletion, false for a new record.
+     * @return void
+     */
+    protected static function fire_event(
+        \stdClass $session,
+        int $pointid,
+        int $userid,
+        int $logid,
+        bool $removed
+    ): void {
+        // The safe_context() lookup is used rather than context_for_session():
+        // this runs from the marking pages, from the report's bulk actions and
+        // from the tests, and an activity without a course module has no context
+        // to log against. The record itself is what matters there, so a missing
+        // context is not an error.
+        $context = photo_manager::safe_context((int) $session->id);
+        if (!$context) {
+            return;
+        }
+
+        $args = [
+            'context' => $context,
+            'objectid' => $logid,
+            'relateduserid' => $userid,
+            'other' => [
+                'pointid' => $pointid,
+                'sessionid' => (int) $session->id,
+                'manual' => true,
+            ],
+        ];
+
+        // Spelled out rather than picked from a string variable: a class name
+        // held in a variable is invisible to static analysis, and the two events
+        // differ in one field that matters.
+        $event = $removed
+            ? event\checkin_removed::create($args)
+            : event\checkin_recorded::create($args);
+        $event->trigger();
+    }
+
+    /**
+     * Remove every check-in a student has in one session.
+     *
+     * The photographs have to go first: they are filed under the log row id, so
+     * once the rows are gone there is nothing left to find them by. The events
+     * are fired from the ids read beforehand, because the delete itself is one
+     * bulk statement and afterwards there is no row left to name.
+     *
+     * @param \stdClass $session Session record.
+     * @param int $userid Student id.
+     * @return int Number of records removed.
+     */
+    public static function clear_user(\stdClass $session, int $userid): int {
+        global $DB;
+
+        $logs = $DB->get_records('multicheckin_log', [
+            'sessionid' => (int) $session->id,
+            'userid' => $userid,
+        ], '', 'id, pointid');
+        if (!$logs) {
+            return 0;
+        }
+
+        photo_manager::delete_for_user((int) $session->id, $userid);
+        $DB->delete_records('multicheckin_log', [
+            'sessionid' => (int) $session->id,
+            'userid' => $userid,
+        ]);
+
+        foreach ($logs as $log) {
+            self::fire_event($session, (int) $log->pointid, $userid, (int) $log->id, true);
+        }
+
+        return count($logs);
     }
 
     /**

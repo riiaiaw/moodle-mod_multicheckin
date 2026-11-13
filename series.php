@@ -100,7 +100,26 @@ if ($action === 'regenerate') {
 if ($action === 'clear') {
     require_sesskey();
 
-    $summary = session_manager::series_data_summary((int) $template->id);
+    // A browser confirm() is not a gate. It disappears when scripting is off,
+    // when a site's CSP drops inline handlers, and in some WebViews - and what
+    // it was guarding is a term's attendance, photographs included, with no
+    // undo. So the confirmation is a page of its own, and nothing is deleted
+    // until the second request arrives with confirm=1.
+    if (!optional_param('confirm', 0, PARAM_BOOL)) {
+        $summary = session_manager::series_data_summary((int) $template->id);
+        echo $OUTPUT->header();
+        echo $OUTPUT->confirm(
+            get_string('series_clear_confirm', 'mod_multicheckin', $summary['total']),
+            new moodle_url(
+                $PAGE->url,
+                ['action' => 'clear', 'confirm' => 1, 'sesskey' => sesskey()]
+            ),
+            $PAGE->url
+        );
+        echo $OUTPUT->footer();
+        exit;
+    }
+
     $removed = session_manager::delete_series((int) $template->id);
 
     redirect(
@@ -353,9 +372,11 @@ $actions[] = html_writer::link(
 
 if ($sessions) {
     $clearurl = new moodle_url($PAGE->url, ['action' => 'clear', 'sesskey' => sesskey()]);
+    // No data-multicheckin-confirm here: the action asks on a page of its own,
+    // so a browser dialog would be the same question twice - and the one that
+    // can be skipped is not the one that decides anything.
     $actions[] = html_writer::link($clearurl, get_string('series_clear', 'mod_multicheckin'), [
         'class' => 'btn btn-outline-danger',
-        'data-multicheckin-confirm' => get_string('series_clear_confirm', 'mod_multicheckin', $summary['total']),
     ]);
 }
 echo html_writer::div(implode(' ', $actions), 'mb-3');

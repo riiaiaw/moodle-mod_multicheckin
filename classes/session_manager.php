@@ -239,7 +239,7 @@ class session_manager {
                 $stats['kept']++;
                 continue;
             }
-            photo_manager::delete_for_point((int) $point->id);
+            photo_manager::delete_for_point((int) $point->id, $sessionid);
             $DB->delete_records('multicheckin_log', ['pointid' => $point->id]);
             $DB->delete_records('multicheckin_point', ['id' => $point->id]);
             $stats['removed']++;
@@ -551,9 +551,32 @@ class session_manager {
             'multicheckin_geo_log',
             'multicheckin_log',
             'multicheckin_result',
+            // Leave requests and sent reminders are part of what the activity
+            // collected from students. Left behind, the leave kept its badge on
+            // every report and the next recompute wrote the leave status
+            // straight back into the result rows that had just been cleared.
+            'multicheckin_leave',
+            'multicheckin_notify',
             ] as $table
         ) {
             $DB->delete_records_select($table, "sessionid {$insql}", $params);
+        }
+
+        // Nothing is settled any more. finalise_sessions only revisits rows whose
+        // timefinalised is 0, so a stamp left in place would mean the result rows
+        // deleted above are never rebuilt: the report stays empty and no task
+        // ever comes back for it.
+        $DB->set_field_select('multicheckin', 'timefinalised', 0, 'course = ?', [$courseid]);
+
+        // And the marks have to leave the gradebook with the data they came from.
+        // grade_item_update(..., 'reset') is the core way to say "delete the
+        // grades, keep the item" - pushing an empty array would not do it, since
+        // grade_update() returns early when it is handed no grades at all.
+        foreach ($templates as $template) {
+            $row = $DB->get_record('multicheckin', ['id' => (int) $template->id]);
+            if ($row) {
+                grade_helper::grade_item_update($row, 'reset');
+            }
         }
     }
 

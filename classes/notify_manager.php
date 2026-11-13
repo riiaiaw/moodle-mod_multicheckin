@@ -116,7 +116,7 @@ class notify_manager {
      * @param int|null $now Current time.
      * @return int Number of messages sent.
      */
-    public static function send_due_reminders(?int $now = null): int {
+    public static function send_due_reminders(?int $now = null, int $onlyactivityid = 0): int {
         global $DB;
 
         $now = $now ?? time();
@@ -128,10 +128,38 @@ class notify_manager {
         // widened by the largest lead time allowed; due_state() then judges
         // each point exactly. Narrowing it here instead would silently drop the
         // sign-in reminder of every class, whose first point opens at T0.
+        //
+        // What it must not be is one row too generous. The template row carries
+        // the same points and the same window as the first occurrence, so it
+        // matched this query and mailed the whole class a second reminder whose
+        // link led to session=<template>: a check-in written there is accepted
+        // by resolve_session() but appears in no list, because list_sessions()
+        // only returns occurrences. The second condition keeps the template
+        // only for an activity that has no occurrences - which is every
+        // activity created before series existed, and they still need their
+        // reminders.
+        $select = "notifyenabled = 1 AND timestart <= :nowplus AND timeend >= :now
+                AND (parentid > 0 OR NOT EXISTS (
+                    SELECT 1 FROM {multicheckin} occ WHERE occ.parentid = {multicheckin}.id
+                ))";
+        $selectparams = ['nowplus' => $now + self::MAX_LEADTIME, 'now' => $now];
+
+        if ($onlyactivityid > 0) {
+            // The manual trigger on the manage page belongs to one activity and
+            // must not push the site's whole queue. Before this it did: any
+            // teacher with mod/multicheckin:manage on any activity could fire
+            // every other course's reminders by clicking the button (or by
+            // opening the URL). The scheduled task still passes 0 and covers
+            // everything, which is its job.
+            $select .= ' AND (id = :activityid OR parentid = :parentactivityid)';
+            $selectparams['activityid'] = $onlyactivityid;
+            $selectparams['parentactivityid'] = $onlyactivityid;
+        }
+
         $sessions = $DB->get_records_select(
             'multicheckin',
-            'notifyenabled = 1 AND timestart <= :nowplus AND timeend >= :now',
-            ['nowplus' => $now + self::MAX_LEADTIME, 'now' => $now],
+            $select,
+            $selectparams,
             '',
             self::SESSION_FIELDS
         );
@@ -333,10 +361,16 @@ class notify_manager {
      * @return \stdClass With cm, coursename and leaves.
      */
     protected static function shared_context(\stdClass $session): \stdClass {
+        // The instance column names the ACTIVITY, not the occurrence, so
+        // looking an occurrence id up here always came back empty and every
+        // reminder for a series went out without a link to the check-in. An
+        // occurrence has to be resolved to its template first.
+        $instanceid = (int) ($session->parentid ?: $session->id);
+
         return (object) [
             'cm' => get_coursemodule_from_instance(
                 'multicheckin',
-                (int) $session->id,
+                $instanceid,
                 $session->course,
                 false,
                 IGNORE_MISSING

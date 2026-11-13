@@ -123,6 +123,12 @@ class restore_multicheckin_activity_structure_step extends restore_activity_stru
             // restored activity and make the whole series invisible. The
             // activity was inserted first, so its mapping is available here.
             $data->parentid = $this->get_new_parentid('multicheckin');
+            // That field needs the same treatment for the same reason: it is
+            // the template id in the site the backup came from, and left alone
+            // it can collide with a completely different activity on the
+            // destination - the kind of mistake that only surfaces the first
+            // time something groups occurrences by series.
+            $data->seriesid = $this->get_new_parentid('multicheckin');
         }
 
         $data->timemodified = $this->apply_date_offset($data->timemodified);

@@ -38,12 +38,23 @@ function multicheckin_supports($feature) {
             return true;
         case FEATURE_BACKUP_MOODLE2:
             return true;
-        case FEATURE_GROUPINGS:
-            return true;
-        case FEATURE_GROUPMEMBERSONLY:
-            return true;
+        // Neither FEATURE_GROUPS nor FEATURE_GROUPINGS is declared. Declaring
+        // groupings without groups put a "grouping" selector on the settings
+        // form while the module read groupmode nowhere: the teacher picked a
+        // grouping and absolutely nothing changed. Group mode belongs to the
+        // activity form and to the queries behind it, so the honest state is to
+        // stop advertising it until the code exists.
+        // FEATURE_COMPLETION_TRACKS_VIEWS below is unrelated and still real.
+        // FEATURE_GROUPMEMBERSONLY is not declared. The constant has been
+        // deprecated since Moodle 2.8 ("which no longer exists") and nothing
+        // reads it on 5.2, so declaring it promises a behaviour the module
+        // cannot have.
         case FEATURE_COMPLETION_TRACKS_VIEWS:
             return true;
+        // Without this the activity lands in "Other" in the activity chooser,
+        // which on a site with thirty plugins is the hardest place to find it.
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_ASSESSMENT;
         default:
             return null;
     }
@@ -137,9 +148,11 @@ function multicheckin_update_instance($data, $mform = null) {
     // already on the timetable untouched. Runs after generate_series() so the
     // occurrences it just created are covered too - they were built from the
     // same plan, so they come back with nothing to add.
+    $midchanged = false;
     if ($plan !== null) {
         $midstats = \mod_multicheckin\session_manager::sync_series_mid_points((int) $data->id, $plan);
-        if ($midstats['added'] || $midstats['removed'] || $midstats['signed']) {
+        $midchanged = $midstats['added'] > 0 || $midstats['removed'] > 0 || $midstats['signed'] > 0;
+        if ($midchanged) {
             // A saved settings page redirects, so this has to survive the
             // redirect: core\notification is the API that does.
             \core\notification::add(
@@ -152,8 +165,30 @@ function multicheckin_update_instance($data, $mform = null) {
     // Shared settings belong to every occurrence in the series. Timing does
     // not: each occurrence keeps the date it was generated with.
     $session = $DB->get_record('multicheckin', ['id' => $data->id]);
+    $synced = 0;
     if ($session) {
-        \mod_multicheckin\session_manager::sync_occurrence_settings((int) $data->id, $session);
+        $synced = \mod_multicheckin\session_manager::sync_occurrence_settings((int) $data->id, $session);
+    }
+
+    // Those settings are inputs to every occurrence's stored result, which was
+    // computed from the OLD ones. Recomputing only the template - which is what
+    // this did - left each date's result.points and statuscode stale, and the
+    // gradebook aggregates exactly those rows: changing "late" from 0.5 to 0
+    // kept scoring the whole term by the old table, with nothing on screen to
+    // say so. timefinalised has to be cleared per occurrence for the same
+    // reason; the scheduled task only revisits rows that are not settled.
+    //
+    // Gated, because saving the form to fix a typo in the introduction must not
+    // recompute a term's worth of attendance. $synced counts the occurrences
+    // whose shared settings really moved; $midchanged covers a roll call that
+    // was added or trimmed, which changes the points a status is computed from
+    // without touching any shared setting.
+    if ($synced > 0 || $midchanged) {
+        $occurrences = \mod_multicheckin\session_manager::get_occurrences((int) $data->id);
+        foreach ($occurrences as $occurrence) {
+            $DB->set_field('multicheckin', 'timefinalised', 0, ['id' => (int) $occurrence->id]);
+            \mod_multicheckin\checkin_engine::compute_session((int) $occurrence->id);
+        }
     }
 
     // Timing may have changed: refresh the computed statuses and push the
@@ -212,7 +247,10 @@ function multicheckin_delete_instance($id) {
     $DB->delete_records('multicheckin_point', ['sessionid' => $id]);
     $DB->delete_records('multicheckin', ['id' => $id]);
 
-    // Remove any gradebook item for this instance.
+    // Remove any gradebook item for this instance. The 'deleted' flag belongs
+    // in $itemdetails - the EIGHTH argument. It used to sit one place later,
+    // where core reads $isbulkupdate (a bool): the item survived its activity
+    // and stayed in the gradebook as a row with no course module behind it.
     $cm = get_coursemodule_from_instance('multicheckin', $id, $session->course, false, IGNORE_MISSING);
     if ($cm) {
         grade_update(
@@ -222,7 +260,6 @@ function multicheckin_delete_instance($id) {
             'multicheckin',
             $id,
             0,
-            null,
             null,
             ['deleted' => 1]
         );
@@ -269,6 +306,31 @@ function multicheckin_update_grades($session, $userid = 0) {
     // grade_helper class docblock. Moodle's own gradebook calls this name, so
     // the callback has to keep existing even though the work moved.
     return \mod_multicheckin\grade_helper::update_grades($session, (int) $userid);
+}
+
+/**
+ * Create or update the grade item for this activity.
+ *
+ * This callback exists because of the one above it: grade_update_mod_grades()
+ * - the path the gradebook's "recalculate" and the course reset both take -
+ * looks for a module's *_update_grades() and *_grade_item_update() together and
+ * refuses to do anything when it finds only one of them:
+ *
+ *     debugging("You have declared one of $updateitemfunc and $updategradesfunc
+ *         but not both. This will cause broken behaviour.", DEBUG_DEVELOPER);
+ *
+ * It also means the item's name, type and maximum come from the activity
+ * rather than from whatever grade_update() invents when it meets an unknown
+ * instance.
+ *
+ * @param stdClass $session Instance record (the template).
+ * @param array|string|null $grades Grades to push, or the string 'reset'.
+ * @return int One of the GRADE_UPDATE_* status codes.
+ */
+function multicheckin_grade_item_update($session, $grades = null) {
+    // The body lives in the class for the same load-order reason as the other
+    // callback: cron never includes this file. See the grade_helper docblock.
+    return \mod_multicheckin\grade_helper::grade_item_update($session, $grades);
 }
 
 /**

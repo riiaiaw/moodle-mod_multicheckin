@@ -153,16 +153,21 @@ class report_bar {
 
         foreach (self::codes() as $code) {
             $count = (int) ($summary['counts'][$code] ?? 0);
+            $selectednow = $selected === $code;
             $class = checkin_engine::status_class($code);
-            if ($selected === $code) {
+            if ($selectednow) {
                 // A ring, not a new colour: the badge's colour is the status,
                 // and a filter that repaints it makes the reader re-learn it.
                 $class .= ' multicheckin-badge-selected';
             }
             $badge = \html_writer::span(($labels[$code] ?? $code) . ' ' . $count, $class);
+            // The ring is the only thing that separates the active filter from
+            // the other five, and a ring says nothing to a screen reader. These
+            // are links, and only one of them describes the page you are on.
             $out .= $baseurl === null ? $badge : \html_writer::link(
-                new \moodle_url($baseurl, ['status' => $selected === $code ? 'all' : $code]),
-                $badge
+                new \moodle_url($baseurl, ['status' => $selectednow ? 'all' : $code]),
+                $badge,
+                $selectednow ? ['aria-current' => 'true'] : []
             );
         }
 

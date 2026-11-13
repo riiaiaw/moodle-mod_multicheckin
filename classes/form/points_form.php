@@ -104,9 +104,26 @@ class points_form extends \moodleform {
             $mform->addElement('advcheckbox', $key . '_notify', get_string('pointnotify', 'mod_multicheckin'));
             $mform->setDefault($key . '_notify', $p->notify);
 
-            $mform->addElement('text', $key . '_password', get_string('pointpassword', 'mod_multicheckin'), ['size' => 30]);
+            // A password field, not a text field. This used to print every
+            // point's shared password in clear on a page that anyone holding
+            // mod/multicheckin:manage can open - and on a projector, too. The
+            // box is never pre-filled, so an empty submission has to mean "keep
+            // the one that is there"; the state is stated beside it instead.
+            $mform->addElement(
+                'password',
+                $key . '_password',
+                get_string('pointpassword', 'mod_multicheckin'),
+                ['size' => 30]
+            );
             $mform->setType($key . '_password', PARAM_TEXT);
-            $mform->setDefault($key . '_password', $p->password);
+            $mform->addElement(
+                'static',
+                $key . '_passwordstate',
+                '',
+                $p->password !== ''
+                    ? get_string('pointpassword_set', 'mod_multicheckin')
+                    : get_string('pointpassword_unset', 'mod_multicheckin')
+            );
         }
 
         $this->add_action_buttons(false, get_string('savechanges'));

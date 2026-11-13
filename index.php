@@ -48,6 +48,14 @@ $PAGE->set_heading(format_string($course->fullname));
 
 $instances = get_all_instances_in_course('multicheckin', $course);
 
+// Every other entry point in this plugin records that it was opened; this one
+// did not, so "who looked at the list of check-in activities in this course"
+// had no answer. The core event class takes a course context and nothing else.
+$event = \mod_multicheckin\event\course_module_instance_list_viewed::create([
+    'context' => context_course::instance($course->id),
+]);
+$event->trigger();
+
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('modulenameplural', 'mod_multicheckin'));
 

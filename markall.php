@@ -239,6 +239,10 @@ if ($action === 'fillmissing' && confirm_sesskey()) {
     );
 }
 
+// The confirmation on the "fill missing" button is applied by the shared
+// module, so the page has to ask for it before anything is drawn.
+$PAGE->requires->js_call_amd('mod_multicheckin/confirm', 'init');
+
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('marks_all_heading', 'mod_multicheckin'));
 
@@ -317,18 +321,26 @@ foreach ($pageusers as $user) {
         $state = mark_manager::state_from_logs($rowshere);
         $key = $point->id . '_' . $user->id;
 
+        // A cell holds two unnamed controls on a page that has one pair per
+        // student per check-in point - sixty students and six points is 720 of
+        // them. A column header does not name a form control: moving between
+        // cells with a screen reader, "checkbox" is all there is. The name has
+        // to say whose tick it is and which check-in it records.
+        $celllabel = fullname($user) . ', ' . format_string(point_name::display($point));
+
         $cell = html_writer::checkbox(
             'm[' . $key . ']',
             1,
             $state['checked'],
             '',
-            ['class' => 'form-check-input me-1']
+            ['class' => 'form-check-input me-1', 'aria-label' => $celllabel]
         );
         $cell .= html_writer::empty_tag('input', [
             'type' => 'time',
             'name' => 't[' . $key . ']',
             'value' => $state['checked'] ? $state['clock'] : mark_manager::default_clock($session, $point),
             'class' => 'form-control form-control-sm d-inline-block multicheckin-markall-time',
+            'aria-label' => $celllabel . ', ' . get_string('time'),
             'style' => 'width: 6.5rem;',
         ]);
         if (mark_manager::state_is_manual($state)) {
@@ -367,7 +379,10 @@ foreach ($pageusers as $user) {
         1,
         $leave !== null,
         '',
-        ['class' => 'form-check-input me-1']
+        [
+            'class' => 'form-check-input me-1',
+            'aria-label' => fullname($user) . ', ' . get_string('leave', 'mod_multicheckin'),
+        ]
     );
     if ($leave && empty($leave->reviewed)) {
         $leavecell .= html_writer::span(
@@ -387,7 +402,9 @@ foreach ($pageusers as $user) {
     $table->data[] = $row;
 }
 
-$form .= html_writer::table($table);
+// Nine columns of fixed-width time boxes do not fit a laptop, and the table
+// used to push the toolbar off screen instead of scrolling on its own.
+$form .= html_writer::div(html_writer::table($table), 'table-responsive');
 $form .= html_writer::empty_tag('input', [
     'type' => 'submit',
     'class' => 'btn btn-primary',
@@ -430,9 +447,14 @@ $toolbar->add_html(nav_toolbar::GROUP_TEACHER, html_writer::link(
     get_string('marks_fillmissing', 'mod_multicheckin'),
     [
         'class' => 'btn btn-outline-secondary',
-        'onclick' => 'return confirm(' . json_encode(
-            get_string('marks_fillmissing_confirm', 'mod_multicheckin', count($pageusers))
-        ) . ');',
+        // The shared module rather than an inline handler. An inline one is
+        // dropped by any CSP without 'unsafe-inline', and the button would then
+        // fill the sheet with no question asked.
+        'data-multicheckin-confirm' => get_string(
+            'marks_fillmissing_confirm',
+            'mod_multicheckin',
+            count($pageusers)
+        ),
     ]
 ));
 

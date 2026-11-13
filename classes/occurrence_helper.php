@@ -145,6 +145,9 @@ class occurrence_helper {
             // The `.form-select` class is the Bootstrap 5 name; `.custom-select` was removed
             // in 5.0 and left the occurrence switcher as a browser-default control.
             'class' => 'form-select',
+            // The label below points here. Without the id it pointed nowhere,
+            // and this is the first control on every page that has it.
+            'id' => 'multicheckin-occurrence',
             'onchange' => 'this.form.submit()',
         ]);
 
@@ -170,6 +173,18 @@ class occurrence_helper {
             ['for' => 'multicheckin-occurrence', 'class' => 'mb-0 text-nowrap']
         );
         $form .= $select;
+        // The picker is the only control that switches occurrence, and it used
+        // to rely entirely on onchange="this.form.submit()". With scripting off
+        // - a corporate policy, a strict CSP without 'unsafe-inline', a WebView,
+        // a failed asset load - the dropdown silently did nothing while every
+        // other action on the page kept working. A submit button costs nothing
+        // when scripting is on: the change has already navigated by the time
+        // anyone could press it.
+        $form .= \html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'class' => 'btn btn-secondary btn-sm',
+            'value' => get_string('go'),
+        ]);
         $form .= \html_writer::end_tag('form');
 
         return $form;
@@ -248,6 +263,12 @@ class occurrence_helper {
             'class' => 'form-control form-control-sm' . ($error !== '' ? ' is-invalid' : ''),
         ], $extra);
 
+        // An empty aria-label is worse than none at all: some screen readers
+        // announce it as a nameless control and stop looking for a label.
+        if (($attributes['aria-label'] ?? null) === '') {
+            unset($attributes['aria-label']);
+        }
+
         $html = \html_writer::empty_tag('input', $attributes);
         if ($error !== '') {
             $html .= \html_writer::div(get_string($error, 'mod_multicheckin'), 'invalid-feedback d-block');
@@ -270,6 +291,7 @@ class occurrence_helper {
      * @param string $date Value for the date box.
      * @param string $clock Value for the time box.
      * @param string $error Language key of the error to show, or ''.
+     * @param array $labels Accessible names, keyed 'date' and 'clock'.
      * @return string HTML.
      */
     private static function time_inputs(
@@ -277,20 +299,27 @@ class occurrence_helper {
         string $prefix,
         string $date,
         string $clock,
-        string $error = ''
+        string $error = '',
+        array $labels = []
     ): string {
         $dateprefix = $prefix === 'date' ? 'date' : 'enddate';
         $clockprefix = $prefix === 'date' ? 'clock' : 'endclock';
 
+        // The placeholder is not a name: it disappears as soon as the box has a
+        // value, and most screen readers never read it as a label. A row of ten
+        // unlabelled boxes ("2026-11-13", "2014", "09:00"...) is unusable
+        // without them.
         return \html_writer::div(
             self::input($dateprefix . '[' . $id . ']', $date, [
                 'size' => 10,
                 'placeholder' => 'YYYY-MM-DD',
+                'aria-label' => $labels['date'] ?? '',
                 'class' => 'form-control form-control-sm multicheckin-when' . ($error !== '' ? ' is-invalid' : ''),
             ], $error)
             . self::input($clockprefix . '[' . $id . ']', $clock, [
                 'size' => 6,
                 'placeholder' => 'HH:MM',
+                'aria-label' => $labels['clock'] ?? '',
                 'class' => 'form-control form-control-sm multicheckin-when' . ($error !== '' ? ' is-invalid' : ''),
             ]),
             'd-flex gap-1'
@@ -364,9 +393,18 @@ class occurrence_helper {
             $enddate = (string) ($row['enddate'] ?? $endwall['date']);
             $endclock = (string) ($row['endclock'] ?? $endwall['time']);
 
+            // Every box in this row needs a name of its own. The column header
+            // labels the COLUMN, and a screen reader moving between cells has no
+            // way to carry it along, so without this the whole table is a
+            // sequence of "edit box, 2026-11-13, 09:00" with no way to tell a
+            // start date from an end date. The sequence number is what makes
+            // each name unique on the page.
+            $rowlabel = get_string('seqno', 'mod_multicheckin') . ' ' . $session->seqno;
+
             $titlecell = self::input('name[' . $id . ']', $titleval, [
                 'size' => 24,
                 'maxlength' => 255,
+                'aria-label' => get_string('session_title', 'mod_multicheckin') . ', ' . $rowlabel,
             ], (string) ($rowerrors['name'] ?? ''));
 
             $startcell = self::time_inputs(
@@ -374,7 +412,13 @@ class occurrence_helper {
                 'date',
                 $startdate,
                 $startclock,
-                (string) ($rowerrors['timestart'] ?? '')
+                (string) ($rowerrors['timestart'] ?? ''),
+                [
+                    'date' => get_string('session_start', 'mod_multicheckin') . ' '
+                        . get_string('date') . ', ' . $rowlabel,
+                    'clock' => get_string('session_start', 'mod_multicheckin') . ' '
+                        . get_string('time') . ', ' . $rowlabel,
+                ]
             );
 
             $endcell = self::time_inputs(
@@ -382,7 +426,13 @@ class occurrence_helper {
                 'enddate',
                 $enddate,
                 $endclock,
-                (string) ($rowerrors['timeend'] ?? '')
+                (string) ($rowerrors['timeend'] ?? ''),
+                [
+                    'date' => get_string('session_end', 'mod_multicheckin') . ' '
+                        . get_string('date') . ', ' . $rowlabel,
+                    'clock' => get_string('session_end', 'mod_multicheckin') . ' '
+                        . get_string('time') . ', ' . $rowlabel,
+                ]
             );
 
             $desccell = description_editor::note_cell($cmid, $session, 'series');

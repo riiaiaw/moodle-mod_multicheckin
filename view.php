@@ -219,13 +219,16 @@ foreach ($points as $p) {
                 'sesskey' => sesskey(),
             ]);
             if ($needsgps) {
-                // Handled by the GPS-aware JS button below.
+                // Handled by the GPS-aware link below. It stays a link with a
+                // real href: with scripting off, or if the module fails to
+                // load, the student still reaches checkin.php, which answers
+                // honestly that it has no position rather than signing them in.
+                // A <button> carrying only data-target did nothing at all.
                 $selfcheckinurls[(int) $p->id] = $url->out(false);
-                $action = html_writer::tag(
-                    'button',
+                $action = html_writer::link(
+                    $url,
                     $checkinlabel,
                     [
-                        'type' => 'button',
                         'class' => 'btn btn-primary btn-sm multicheckin-geocheckin',
                         'data-target' => (int) $p->id,
                     ]
@@ -348,49 +351,43 @@ if ($isgeofenced) {
         \core\output\notification::NOTIFY_WARNING,
         false
     );
+
+    // The two fences are not equally strong evidence and the page should not
+    // imply they are. This one is a number the browser reads from the device and
+    // puts in the check-in request - the student has no field to type it into,
+    // but the request itself can still be edited. IP mode is read by the server
+    // from the connection, which nothing on the client can change.
+    if ($needsgps) {
+        echo html_writer::div(
+            get_string('geofence_selfreported', 'mod_multicheckin'),
+            'text-muted small mb-2'
+        );
+    }
 }
 
 // GPS-aware self check-in: acquire a position, then forward it to checkin.php.
+//
+// The data travels in a data-config attribute and the behaviour lives in
+// amd/src/geo_checkin.js. An inline <script> cannot be covered by a CSP hash or
+// nonce, so one tightened site policy silently disabled the whole flow; issue
+// #10 moved every other page's payload out of one for the same reason.
 if ($needsgps && $selfcheckinurls) {
-    $jsdata = json_encode($selfcheckinurls);
-    $jsstr = json_encode([
-        'locating' => get_string('geo_locating', 'mod_multicheckin'),
-        'denied' => get_string('geo_denied', 'mod_multicheckin'),
-        'unsupported' => get_string('geo_unsupported', 'mod_multicheckin'),
+    $geoconfig = json_encode([
+        'urls' => $selfcheckinurls,
+        'strings' => [
+            'locating' => get_string('geo_locating', 'mod_multicheckin'),
+            'denied' => get_string('geo_denied', 'mod_multicheckin'),
+            'unsupported' => get_string('geo_unsupported', 'mod_multicheckin'),
+        ],
     ]);
-    echo html_writer::tag('script', "
-(function() {
-    var urls = $jsdata;
-    var L = $jsstr;
-    document.querySelectorAll('.multicheckin-geocheckin').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var point = btn.getAttribute('data-target');
-            var base = urls[point];
-            if (!base) { return; }
-            if (!navigator.geolocation) {
-                alert(L.unsupported);
-                window.location.href = base;
-                return;
-            }
-            btn.disabled = true;
-            var original = btn.textContent;
-            btn.textContent = L.locating;
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                var c = pos.coords;
-                var sep = base.indexOf('?') === -1 ? '?' : '&';
-                window.location.href = base + sep
-                    + 'geolat=' + encodeURIComponent(c.latitude)
-                    + '&geolng=' + encodeURIComponent(c.longitude)
-                    + '&geoacc=' + encodeURIComponent(c.accuracy || '');
-            }, function() {
-                alert(L.denied);
-                btn.disabled = false;
-                btn.textContent = original;
-            }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
-        });
-    });
-})();
-", ['type' => 'text/javascript']);
+    echo html_writer::div('', 'd-none', 'multicheckin-geo-config', ['data-config' => $geoconfig]);
+    // The failure message lands here. It is a live region because the alternative
+    // was alert(), which blocks the page and cannot be restyled by the theme.
+    echo html_writer::div('', 'text-danger small mb-2 d-none', 'multicheckin-geo-status', [
+        'role' => 'status',
+        'aria-live' => 'polite',
+    ]);
+    $PAGE->requires->js_call_amd('mod_multicheckin/geo_checkin', 'init');
 }
 
 // The options toolbar.

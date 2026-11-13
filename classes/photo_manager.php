@@ -1320,19 +1320,35 @@ class photo_manager {
      * Used when a point is removed - by the management page, or by a series
      * rebuild that trims a mid roll call away - because its log rows go with it.
      *
+     * The point is also identified by the session it belongs to whenever the
+     * caller knows it. A point id on its own is an auto-increment integer from
+     * the whole site's table, and this method resolves the file context from
+     * the first log row it finds: handed another activity's point id, it would
+     * delete that activity's photographs. Callers inside a known session pass
+     * it, and the lookups below are then constrained to it.
+     *
      * @param int $pointid Point id.
+     * @param int|null $sessionid Session the point must belong to, or null when unknown.
      * @return void
      */
-    public static function delete_for_point(int $pointid): void {
+    public static function delete_for_point(int $pointid, ?int $sessionid = null): void {
         global $DB;
 
-        $logs = $DB->get_records('multicheckin_log', ['pointid' => $pointid], '', 'id,sessionid');
+        $conditions = ['pointid' => $pointid];
+        if ($sessionid !== null) {
+            $conditions['sessionid'] = $sessionid;
+        }
+
+        $logs = $DB->get_records('multicheckin_log', $conditions, '', 'id,sessionid');
         if (!$logs) {
             return;
         }
 
-        $first = reset($logs);
-        $context = self::safe_context((int) $first->sessionid);
+        // With the session known, it is the answer. Falling back to the first
+        // log row keeps the old behaviour for callers that genuinely do not
+        // know which session a point belongs to.
+        $contextsession = $sessionid ?? (int) reset($logs)->sessionid;
+        $context = self::safe_context($contextsession);
         if (!$context) {
             return;
         }

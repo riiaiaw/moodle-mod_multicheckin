@@ -27,6 +27,16 @@ namespace mod_multicheckin\task;
  */
 class finalise_sessions extends \core\task\scheduled_task {
     /**
+     * How many ended occurrences one run will settle.
+     *
+     * A site that was offline for a month comes back to hundreds of them, and
+     * walking all of them in one execute() - each one reading a class worth of
+     * logs and writing a class worth of results - runs into the cron limit.
+     * Whatever is left keeps timefinalised = 0 and the next run continues.
+     */
+    protected const BATCH = 50;
+
+    /**
      * Task name shown in admin.
      *
      * @return string
@@ -84,7 +94,11 @@ class finalise_sessions extends \core\task\scheduled_task {
         $sessions = $DB->get_records_select(
             'multicheckin',
             'timefinalised = 0 AND timeend < :now AND timeend > :since',
-            ['now' => $now, 'since' => $since]
+            ['now' => $now, 'since' => $since],
+            '',
+            '*',
+            0,
+            self::BATCH
         );
 
         // Group the ended sessions by their activity so the gradebook is pushed
@@ -93,7 +107,20 @@ class finalise_sessions extends \core\task\scheduled_task {
         // in the identical value.
         $templates = [];
         foreach ($sessions as $session) {
-            $this->settle($session);
+            // One occurrence that cannot be settled must not take the rest of
+            // the run with it. An exception escaping here left every occurrence
+            // queued behind it untouched - recoverable in principle, but only by
+            // meeting the same failure again on the next run, for as long as the
+            // bad row exists.
+            try {
+                $this->settle($session);
+            } catch (\Throwable $e) {
+                debugging(
+                    'multicheckin: session ' . $session->id . ' could not be settled: ' . $e->getMessage(),
+                    DEBUG_DEVELOPER
+                );
+                continue;
+            }
 
             $templateid = \mod_multicheckin\session_manager::is_occurrence($session)
                 ? (int) $session->parentid
