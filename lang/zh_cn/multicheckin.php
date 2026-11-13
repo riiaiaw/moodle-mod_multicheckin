@@ -546,6 +546,7 @@ $string['gradeaggregate_sum'] = '全部场次合计';
 $string['gradebestcount'] = '取最好几次';
 $string['gradebestcount_help'] = '仅当汇总方式选择「成绩最好的若干次平均」时生效。超过实际场次数时按实际场次数计算。';
 $string['gradebestcount_invalid'] = '取最好的次数须在 1–{$a} 之间。';
+$string['gradecolumn'] = '成绩';
 
 // Whole-series report.
 $string['reportall'] = '全场次考勤汇总';

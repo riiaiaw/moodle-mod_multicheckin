@@ -96,13 +96,42 @@ jobs:
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci phpmd
 
+      # The two checks below keep their strictness but no longer keep their
+      # reasons to themselves. A failed step's log needs repository admin rights
+      # to download, so "exit code 1" was all anyone could see - and the first
+      # run of this workflow failed here with no way to find out why. The step
+      # itself is allowed to fail, the tail of its output is republished as
+      # annotations (readable without admin rights), and the reporting step then
+      # fails the job exactly as before.
       - name: Moodle Code Checker
+        id: codechecker
+        continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0
+        run: moodle-plugin-ci phpcs --max-warnings 0 2>&1 | tee codechecker.log
+
+      - name: Report code checker result
+        if: ${{ !cancelled() && steps.codechecker.outcome != 'success' }}
+        run: |
+          head -40 codechecker.log | while IFS= read -r line; do
+            [ -n "$line" ] && echo "::error title=phpcs::$line"
+          done
+          echo "::error title=phpcs::the step above failed; see the annotations"
+          exit 1
 
       - name: Moodle PHPDoc Checker
+        id: phpdoc
+        continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpdoc --max-warnings 0
+        run: moodle-plugin-ci phpdoc --max-warnings 0 2>&1 | tee phpdoc.log
+
+      - name: Report PHPDoc result
+        if: ${{ !cancelled() && steps.phpdoc.outcome != 'success' }}
+        run: |
+          head -40 phpdoc.log | while IFS= read -r line; do
+            [ -n "$line" ] && echo "::error title=phpdoc::$line"
+          done
+          echo "::error title=phpdoc::the step above failed; see the annotations"
+          exit 1
 
       - name: Validating
         if: ${{ !cancelled() }}

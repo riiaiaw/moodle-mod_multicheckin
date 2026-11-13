@@ -550,6 +550,7 @@ $string['gradeaggregate_sum'] = 'Sum of all occurrences';
 $string['gradebestcount'] = 'Number of best occurrences';
 $string['gradebestcount_help'] = 'Only used when aggregating by the best N. A value larger than the number of occurrences present is treated as the number present.';
 $string['gradebestcount_invalid'] = 'The number of best occurrences must be between 1 and {$a}.';
+$string['gradecolumn'] = 'Grade';
 
 // Whole-series report.
 $string['reportall'] = 'Attendance across all occurrences';

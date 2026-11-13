@@ -114,6 +114,7 @@ class notify_manager {
      * Remind whoever is due, for every occurrence in progress.
      *
      * @param int|null $now Current time.
+     * @param int $onlyactivityid Restrict to one activity (0 = every activity).
      * @return int Number of messages sent.
      */
     public static function send_due_reminders(?int $now = null, int $onlyactivityid = 0): int {

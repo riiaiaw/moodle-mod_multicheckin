@@ -117,7 +117,11 @@ class report_helper {
                 . userdate($session->timestart, get_string('strftimedateshort', 'langconfig'));
         }
         $table->head[] = get_string('attendancecount', 'mod_multicheckin');
-        $table->head[] = get_string('grade');
+        // Component-qualified on purpose. A bare get_string('grade') looks in the
+        // core 'moodle' pack, where the word does not exist - core keeps it in
+        // 'grades' - so the column rendered as the literal [[grade]] on every
+        // series report while the rest of the row looked fine.
+        $table->head[] = get_string('gradecolumn', 'mod_multicheckin');
 
         $table->data = [];
         foreach ($matrix['rows'] as $row) {
@@ -307,7 +311,7 @@ class report_helper {
                 . ' ' . userdate($session->timestart, get_string('strftimedateshort', 'langconfig'));
         }
         $header[] = get_string('attendancecount', 'mod_multicheckin');
-        $header[] = get_string('grade');
+        $header[] = get_string('gradecolumn', 'mod_multicheckin');
         fputcsv($out, $header);
 
         $statuslabels = [
