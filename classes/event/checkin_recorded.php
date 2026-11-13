@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Event fired when a user checks in at a point.
  *
@@ -26,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class checkin_recorded extends \core\event\base {
-
     /**
      * Init the event.
      *

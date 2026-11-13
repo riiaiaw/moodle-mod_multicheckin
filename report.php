@@ -27,6 +27,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -90,15 +91,21 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// ---- Whole-series report ----------------------------------------------
+// Whole-series report.
 //
 // With a series, the per-occurrence sheet answers "who came to this class" but
 // not "how is this student doing". The series view answers the second: one row
 // per student, one column per occurrence, so a pattern of absences is visible
-// at a glance instead of having to open twenty reports.
+// At a glance instead of having to open twenty reports.
 if ($showall) {
-    \mod_multicheckin\report_helper::render_series_report($course, $cm, $context, $template, $sessions,
-        $download === 'csv');
+    \mod_multicheckin\report_helper::render_series_report(
+        $course,
+        $cm,
+        $context,
+        $template,
+        $sessions,
+        $download === 'csv'
+    );
     exit;
 }
 
@@ -171,8 +178,13 @@ foreach ($users as $user) {
         // so the status is derived from their check-in logs here instead.
         // compute_user_with() only reads what it was handed, so the page stays a
         // pure view and the answer is the one the task would have stored.
-        $computed = checkin_engine::compute_user_with($session, $points, $userid, $logs,
-            $allleaves[$userid] ?? null);
+        $computed = checkin_engine::compute_user_with(
+            $session,
+            $points,
+            $userid,
+            $logs,
+            $allleaves[$userid] ?? null
+        );
         $result = (object) $computed;
     }
 
@@ -218,13 +230,13 @@ $filters = report_filter::normalise($controlsenabled ? [
 // second query and not from the visible subset. Two reasons, and they are not
 // the same reason:
 //
-//   * Two reads of the same thing are two chances to disagree. A summary that
-//     says five were absent while the table lists four is worse than no summary
-//     at all: the reader has no way to tell which half lied.
-//   * The badges are the filter's own controls. If they counted the filtered
-//     rows, clicking "absent 5" would set every other badge to 0 and take away
-//     the way back. The width of the current view is printed beside them as
-//     "showing X of Y" instead, so the two statements are both true.
+// * Two reads of the same thing are two chances to disagree. A summary that
+// says five were absent while the table lists four is worse than no summary
+// at all: the reader has no way to tell which half lied.
+// * The badges are the filter's own controls. If they counted the filtered
+// rows, clicking "absent 5" would set every other badge to 0 and take away
+// the way back. The width of the current view is printed beside them as
+// "showing X of Y" instead, so the two statements are both true.
 $allrows = $rows;
 $summary = report_bar::count($allrows);
 
@@ -314,8 +326,10 @@ echo $OUTPUT->heading(get_string('viewreport', 'mod_multicheckin'));
 // page.
 if ($multi) {
     $allurl = new moodle_url($PAGE->url, ['all' => 1]);
-    echo html_writer::div(html_writer::link($allurl, get_string('reportall_link', 'mod_multicheckin')),
-        'mb-2');
+    echo html_writer::div(
+        html_writer::link($allurl, get_string('reportall_link', 'mod_multicheckin')),
+        'mb-2'
+    );
 }
 
 echo occurrence_helper::render_picker((int) $cm->id, $sessions, (int) $session->id, 'report.php');
@@ -355,9 +369,14 @@ $baseurl = new moodle_url($PAGE->url);
 echo html_writer::div(
     report_bar::export_button($csvurl)
         . ($controlsenabled ? report_bar::search_form($baseurl, $filters) : '')
-        . report_bar::summary($summary, $controlsenabled ? $baseurl : null,
-            $filters['status'], count($rows)),
-    'd-flex flex-wrap align-items-center gap-3 mb-3 multicheckin-report-bar');
+        . report_bar::summary(
+            $summary,
+            $controlsenabled ? $baseurl : null,
+            $filters['status'],
+            count($rows)
+        ),
+    'd-flex flex-wrap align-items-center gap-3 mb-3 multicheckin-report-bar'
+);
 
 // The QR panel sits at the top centre, above the roster table, so the teacher
 // can project this page and have students scan the code first. It renders
@@ -391,11 +410,17 @@ $sorthead = function (string $key, string $label) use ($baseurl, $filters, $cont
     }
 
     $arrow = $active ? ($ascending ? ' ▲' : ' ▼') : '';
-    $title = get_string($active && $ascending ? 'report_sortdesc' : 'report_sortasc',
-        'mod_multicheckin', $label);
+    $title = get_string(
+        $active && $ascending ? 'report_sortdesc' : 'report_sortasc',
+        'mod_multicheckin',
+        $label
+    );
 
-    return html_writer::link(new moodle_url($baseurl, $params), $label . $arrow,
-        ['class' => 'multicheckin-sort-link', 'title' => $title]);
+    return html_writer::link(
+        new moodle_url($baseurl, $params),
+        $label . $arrow,
+        ['class' => 'multicheckin-sort-link', 'title' => $title]
+    );
 };
 
 $table->head = [
@@ -426,8 +451,10 @@ $table->data = [];
 // the evidence for the count beside it. Collected before the loop rather than
 // inside it: a file-area lookup per cell would make this page's cost grow with
 // the class, and it is already the page a teacher leaves open during a lecture.
-$photos = photo_manager::for_session_users($session,
-    array_map(fn($r) => (int) $r->userid, $rows));
+$photos = photo_manager::for_session_users(
+    $session,
+    array_map(fn($r) => (int) $r->userid, $rows)
+);
 
 foreach ($rows as $r) {
     $line = [$r->user, s($r->username)];
@@ -437,12 +464,16 @@ foreach ($rows as $r) {
         // row that did not come from the student's own device.
         if ($count && !empty($r->manualpoints[$p->id])) {
             $count .= ' ' . html_writer::span(
-                get_string('mark_manual', 'mod_multicheckin'), 'badge bg-info text-dark');
+                get_string('mark_manual', 'mod_multicheckin'),
+                'badge bg-info text-dark'
+            );
         }
         $photo = $photos[(int) $r->userid][(int) $p->id] ?? null;
         if ($photo) {
-            $count .= ' ' . photo_manager::link($photo,
-                html_writer::tag('i', '', ['class' => 'fa fa-camera', 'aria-hidden' => 'true']));
+            $count .= ' ' . photo_manager::link(
+                $photo,
+                html_writer::tag('i', '', ['class' => 'fa fa-camera', 'aria-hidden' => 'true'])
+            );
         }
         $line[] = $count;
     }
@@ -471,12 +502,12 @@ if (!$rows && $controlsenabled) {
 
 echo html_writer::table($table);
 
-// ---- The options toolbar ----
+// The options toolbar.
 //
 // The same helper the activity page uses, so the bottom of every page in this
 // plugin reads the same way and offers the same set in the same order. Taking
 // the roll is the action this report exists to feed, so it is the primary
-// button.
+// Button.
 $toolbar = new nav_toolbar();
 
 if ($canmark) {
@@ -484,8 +515,12 @@ if ($canmark) {
         'id' => $cm->id,
         'session' => $session->id,
     ]);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $markallurl,
-        get_string('markall_link', 'mod_multicheckin'), ['primary' => true]);
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $markallurl,
+        get_string('markall_link', 'mod_multicheckin'),
+        ['primary' => true]
+    );
 }
 
 $backurl = new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id, 'session' => $session->id]);

@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin\external;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
@@ -38,7 +36,6 @@ use mod_multicheckin\place_manager;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class delete_place extends external_api {
-
     /**
      * Parameters.
      *
@@ -87,8 +84,10 @@ class delete_place extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'deleted' => new external_value(PARAM_BOOL, 'Whether the row was removed.'),
-            'usagecount' => new external_value(PARAM_INT,
-                'How many sessions still use the same coordinates.'),
+            'usagecount' => new external_value(
+                PARAM_INT,
+                'How many sessions still use the same coordinates.'
+            ),
         ]);
     }
 }

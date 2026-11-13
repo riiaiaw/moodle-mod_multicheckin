@@ -27,6 +27,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -64,9 +65,12 @@ if (!$template) {
 
 $session = session_manager::resolve_session($template, $sessionparam);
 if (!$session) {
-    redirect(new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
-        get_string('series_bad_session', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
+        get_string('series_bad_session', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $sessions = session_manager::list_sessions($template);
@@ -78,8 +82,10 @@ $PAGE->set_context($context);
 
 // Every action below must return to the page showing the same occurrence, so
 // the redirect target carries the session through.
-$pageurl = new moodle_url('/mod/multicheckin/manage.php',
-    ['id' => $cm->id, 'session' => $session->id]);
+$pageurl = new moodle_url(
+    '/mod/multicheckin/manage.php',
+    ['id' => $cm->id, 'session' => $session->id]
+);
 $PAGE->set_url($pageurl);
 
 $action = optional_param('action', '', PARAM_ALPHA);
@@ -138,11 +144,16 @@ echo $OUTPUT->heading(get_string('managepoints', 'mod_multicheckin'));
 // mistake a multi-occurrence activity invites.
 if (count($sessions) > 1) {
     echo \mod_multicheckin\occurrence_helper::render_picker(
-        $cm->id, $sessions, (int) $session->id, 'manage.php');
+        $cm->id,
+        $sessions,
+        (int) $session->id,
+        'manage.php'
+    );
     $seriesurl = new moodle_url('/mod/multicheckin/series.php', ['id' => $cm->id]);
     echo html_writer::div(
         html_writer::link($seriesurl, get_string('occurrence_manageall', 'mod_multicheckin')),
-        'text-muted small mb-3');
+        'text-muted small mb-3'
+    );
 }
 
 // What this occurrence is for. Kept above the point table, because the note is
@@ -195,15 +206,19 @@ $editform->display();
 $actions = [];
 $addurl = new moodle_url($PAGE->url, ['action' => 'addpoint', 'sesskey' => sesskey()]);
 $actions[] = html_writer::link($addurl, get_string('addpoint', 'mod_multicheckin'), ['class' => 'btn btn-secondary']);
-$markallurl = new moodle_url('/mod/multicheckin/markall.php',
-    ['id' => $cm->id, 'session' => $session->id]);
+$markallurl = new moodle_url(
+    '/mod/multicheckin/markall.php',
+    ['id' => $cm->id, 'session' => $session->id]
+);
 $actions[] = html_writer::link($markallurl, get_string('markall_link', 'mod_multicheckin'), ['class' => 'btn btn-secondary']);
 // The audit link and the slice of log below it are shown only when the teacher
 // switched the audit on for this activity; the page itself is still reachable
 // by direct URL. See the geofence section of the plugin README.
 if (!empty($session->showgeoaudit)) {
-    $geologurl = new moodle_url('/mod/multicheckin/geolog.php',
-        ['id' => $cm->id, 'session' => $session->id]);
+    $geologurl = new moodle_url(
+        '/mod/multicheckin/geolog.php',
+        ['id' => $cm->id, 'session' => $session->id]
+    );
     $actions[] = html_writer::link($geologurl, get_string('audit_link', 'mod_multicheckin'), ['class' => 'btn btn-secondary']);
 }
 $recurl = new moodle_url($PAGE->url, ['action' => 'recompute', 'sesskey' => sesskey()]);
@@ -229,11 +244,11 @@ foreach ($points as $p) {
 }
 echo html_writer::table($dtable);
 
-// ---- Geofence audit log ----
+// Geofence audit log.
 // A short recent slice, shown when a fence is configured so the page stays
 // short otherwise. The full view - with the configuration restated, the reasons
 // counted, and the rows where the fence was bypassed or had nothing to compare
-// against spelled out - lives on its own page.
+// Against spelled out - lives on its own page.
 if (!empty($session->showgeoaudit) && !empty($session->geomode) && $session->geomode !== 'none') {
     $geologs = $DB->get_records_sql(
         "SELECT g.*, u.firstname, u.lastname, mp.name AS pointname, mp.role AS pointrole
@@ -242,7 +257,9 @@ if (!empty($session->showgeoaudit) && !empty($session->geomode) && $session->geo
            JOIN {multicheckin_point} mp ON mp.id = g.pointid
           WHERE g.sessionid = :sessionid
        ORDER BY g.timecreated DESC",
-        ['sessionid' => $session->id], 0, 100
+        ['sessionid' => $session->id],
+        0,
+        100
     );
 
     if ($geologs) {
@@ -280,8 +297,10 @@ if (!empty($session->showgeoaudit) && !empty($session->geomode) && $session->geo
     }
 }
 
-$backurl = new moodle_url('/mod/multicheckin/view.php',
-    ['id' => $cm->id, 'session' => $session->id]);
+$backurl = new moodle_url(
+    '/mod/multicheckin/view.php',
+    ['id' => $cm->id, 'session' => $session->id]
+);
 echo $OUTPUT->single_button($backurl, get_string('back'), 'get');
 
 echo $OUTPUT->footer();

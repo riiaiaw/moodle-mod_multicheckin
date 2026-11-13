@@ -30,7 +30,6 @@ use mod_multicheckin\point_name;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class points_form extends \moodleform {
-
     /**
      * Definition.
      *
@@ -60,14 +59,22 @@ class points_form extends \moodleform {
             $mform->setType($key . '_name', PARAM_TEXT);
             $mform->setDefault($key . '_name', $p->name);
 
-            $mform->addElement('text', $key . '_openoffset',
-                get_string('openoffset', 'mod_multicheckin'), ['size' => 8]);
+            $mform->addElement(
+                'text',
+                $key . '_openoffset',
+                get_string('openoffset', 'mod_multicheckin'),
+                ['size' => 8]
+            );
             $mform->setType($key . '_openoffset', PARAM_INT);
             $mform->setDefault($key . '_openoffset', $p->openoffset);
             $mform->addHelpButton($key . '_openoffset', 'openoffset', 'mod_multicheckin');
 
-            $mform->addElement('text', $key . '_closeoffset',
-                get_string('closeoffset', 'mod_multicheckin'), ['size' => 8]);
+            $mform->addElement(
+                'text',
+                $key . '_closeoffset',
+                get_string('closeoffset', 'mod_multicheckin'),
+                ['size' => 8]
+            );
             $mform->setType($key . '_closeoffset', PARAM_INT);
             $mform->setDefault($key . '_closeoffset', $p->closeoffset);
 

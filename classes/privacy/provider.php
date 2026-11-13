@@ -26,8 +26,6 @@ use mod_multicheckin\leave_manager;
 use mod_multicheckin\photo_manager;
 use mod_multicheckin\point_name;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider for mod_multicheckin.
  *
@@ -39,7 +37,6 @@ class provider implements
     \core_privacy\local\metadata\provider,
     \core_privacy\local\request\core_userlist_provider,
     \core_privacy\local\request\plugin\provider {
-
     /**
      * Describe the data stored.
      *
@@ -140,8 +137,9 @@ class provider implements
                   FROM {context} ctx
                   JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextlevel
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                  JOIN {multicheckin} mc ON mc.id = cm.instance
-                  JOIN {multicheckin_log} ml ON ml.sessionid = mc.id
+                  JOIN {multicheckin} tmpl ON tmpl.id = cm.instance
+                  JOIN {multicheckin} occ ON occ.id = tmpl.id OR occ.parentid = tmpl.id
+                  JOIN {multicheckin_log} ml ON ml.sessionid = occ.id
                  WHERE ml.userid = :userid";
         $contextlist->add_from_sql($sql, [
             'contextlevel' => CONTEXT_MODULE,
@@ -149,10 +147,11 @@ class provider implements
             'userid' => $userid,
         ]);
 
-        // Leaves, which live on the occurrence rows rather than on the template
-        // the course module points at. The join therefore walks the template and
-        // its occurrences, so a student who only ever raised a leave is still
-        // found - the log query above would miss them entirely.
+        // Everything below hangs off the occurrence rows rather than the template
+        // the course module points at, so each join walks the template and its
+        // occurrences. A student whose only record is a leave, a verification
+        // request or a capture permit has no row in multicheckin_log at all, and
+        // the log query above would not find them.
         $leavesql = "SELECT DISTINCT ctx.id
                        FROM {context} ctx
                        JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextlevel
@@ -217,11 +216,12 @@ class provider implements
         if (!$context instanceof \context_module) {
             return;
         }
-        $sql = "SELECT ml.userid
+        $sql = "SELECT DISTINCT ml.userid
                   FROM {course_modules} cm
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                  JOIN {multicheckin} mc ON mc.id = cm.instance
-                  JOIN {multicheckin_log} ml ON ml.sessionid = mc.id
+                  JOIN {multicheckin} tmpl ON tmpl.id = cm.instance
+                  JOIN {multicheckin} occ ON occ.id = tmpl.id OR occ.parentid = tmpl.id
+                  JOIN {multicheckin_log} ml ON ml.sessionid = occ.id
                  WHERE cm.id = :cmid";
         $userlist->add_from_sql('userid', $sql, ['modname' => 'multicheckin', 'cmid' => $context->instanceid]);
 
@@ -275,8 +275,11 @@ class provider implements
             // occurrence is a row of the same table, and a term's check-ins
             // hang off the occurrences: a query pinned to the template would
             // export an empty file for any activity that has a series.
-            [$sesssql, $sessparams] = $DB->get_in_or_equal(self::session_ids((int) $cm->instance),
-                SQL_PARAMS_NAMED, 'expsess');
+            [$sesssql, $sessparams] = $DB->get_in_or_equal(
+                self::session_ids((int) $cm->instance),
+                SQL_PARAMS_NAMED,
+                'expsess'
+            );
 
             $logs = $DB->get_records_sql(
                 "SELECT ml.id, ml.timecreated, ml.ip, ml.method, mp.name AS pointname, mp.role AS pointrole
@@ -327,11 +330,16 @@ class provider implements
 
             // Leave requests. The note file is exported through the file API so
             // the student actually receives the document they handed in.
-            [$insql, $inparams] = $DB->get_in_or_equal(self::session_ids((int) $cm->instance),
-                SQL_PARAMS_NAMED, 'leavesess');
-            $leaves = $DB->get_records_select('multicheckin_leave',
+            [$insql, $inparams] = $DB->get_in_or_equal(
+                self::session_ids((int) $cm->instance),
+                SQL_PARAMS_NAMED,
+                'leavesess'
+            );
+            $leaves = $DB->get_records_select(
+                'multicheckin_leave',
                 "sessionid $insql AND userid = :userid",
-                $inparams + ['userid' => (int) $user->id]);
+                $inparams + ['userid' => (int) $user->id]
+            );
             if ($leaves) {
                 $leavedata = [];
                 foreach ($leaves as $leave) {
@@ -397,6 +405,22 @@ class provider implements
     }
 
     /**
+     * The tables that hold one row per user action.
+     *
+     * Named once because the three delete methods must reach exactly the same
+     * set: a table added here is deleted everywhere, and one left out is a
+     * table that keeps a student's data after they asked for erasure.
+     *
+     * @var string[]
+     */
+    protected const USER_TABLES = [
+        'multicheckin_log',
+        'multicheckin_result',
+        'multicheckin_notify',
+        'multicheckin_geo_log',
+    ];
+
+    /**
      * Every multicheckin row that belongs to one course module.
      *
      * The course module references the template, but the leaves hang off the
@@ -433,10 +457,18 @@ class provider implements
         if (!$cm || $cm->modname !== 'multicheckin') {
             return;
         }
-        $DB->delete_records('multicheckin_log', ['sessionid' => $cm->instance]);
-        $DB->delete_records('multicheckin_result', ['sessionid' => $cm->instance]);
-        $DB->delete_records('multicheckin_notify', ['sessionid' => $cm->instance]);
-        $DB->delete_records('multicheckin_geo_log', ['sessionid' => $cm->instance]);
+        // Every session of the activity, not only the template: a term's
+        // check-ins hang off the occurrences, and deleting just the template's
+        // rows would leave attendance behind after an erasure request. This is
+        // the same set of ids the export walks.
+        [$tablesql, $tableparams] = $DB->get_in_or_equal(
+            self::session_ids((int) $cm->instance),
+            SQL_PARAMS_NAMED,
+            'delsess'
+        );
+        foreach (self::USER_TABLES as $table) {
+            $DB->delete_records_select($table, "sessionid {$tablesql}", $tableparams);
+        }
         // The check-in photographs, the by-hand requests, and any picture taken
         // for a session of the series. Run before the rows go: the file area is
         // reached through the module context, which is resolved from them.
@@ -467,15 +499,26 @@ class provider implements
             if (!$cm || $cm->modname !== 'multicheckin') {
                 continue;
             }
-            $DB->delete_records('multicheckin_log', ['sessionid' => $cm->instance, 'userid' => $user->id]);
-            $DB->delete_records('multicheckin_result', ['sessionid' => $cm->instance, 'userid' => $user->id]);
-            $DB->delete_records('multicheckin_notify', ['sessionid' => $cm->instance, 'userid' => $user->id]);
-            $DB->delete_records('multicheckin_geo_log', ['sessionid' => $cm->instance, 'userid' => $user->id]);
+            [$tablesql, $tableparams] = $DB->get_in_or_equal(
+                self::session_ids((int) $cm->instance),
+                SQL_PARAMS_NAMED,
+                'delsess'
+            );
+            $params = array_merge($tableparams, ['deluser' => (int) $user->id]);
+            foreach (self::USER_TABLES as $table) {
+                $DB->delete_records_select(
+                    $table,
+                    "sessionid {$tablesql} AND userid = :deluser",
+                    $params
+                );
+            }
             foreach (self::session_ids((int) $cm->instance) as $sessionid) {
                 photo_manager::delete_for_user($sessionid, (int) $user->id);
                 leave_manager::delete_for_user($sessionid, (int) $user->id);
-                $DB->delete_records('multicheckin_pass',
-                    ['sessionid' => $sessionid, 'userid' => (int) $user->id]);
+                $DB->delete_records(
+                    'multicheckin_pass',
+                    ['sessionid' => $sessionid, 'userid' => (int) $user->id]
+                );
             }
         }
     }
@@ -500,18 +543,28 @@ class provider implements
         if (!$userids) {
             return;
         }
-        list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
-        $params = array_merge(['sessionid' => $cm->instance], $inparams);
-        $DB->delete_records_select('multicheckin_log', "sessionid = :sessionid AND userid {$insql}", $params);
-        $DB->delete_records_select('multicheckin_result', "sessionid = :sessionid AND userid {$insql}", $params);
-        $DB->delete_records_select('multicheckin_notify', "sessionid = :sessionid AND userid {$insql}", $params);
-        $DB->delete_records_select('multicheckin_geo_log', "sessionid = :sessionid AND userid {$insql}", $params);
+        [$tablesql, $tableparams] = $DB->get_in_or_equal(
+            self::session_ids((int) $cm->instance),
+            SQL_PARAMS_NAMED,
+            'delsess'
+        );
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'deluser');
+        $params = array_merge($tableparams, $inparams);
+        foreach (self::USER_TABLES as $table) {
+            $DB->delete_records_select(
+                $table,
+                "sessionid {$tablesql} AND userid {$insql}",
+                $params
+            );
+        }
         foreach (self::session_ids((int) $cm->instance) as $sessionid) {
             foreach ($userids as $uid) {
                 photo_manager::delete_for_user($sessionid, (int) $uid);
                 leave_manager::delete_for_user($sessionid, (int) $uid);
-                $DB->delete_records('multicheckin_pass',
-                    ['sessionid' => $sessionid, 'userid' => (int) $uid]);
+                $DB->delete_records(
+                    'multicheckin_pass',
+                    ['sessionid' => $sessionid, 'userid' => (int) $uid]
+                );
             }
         }
     }

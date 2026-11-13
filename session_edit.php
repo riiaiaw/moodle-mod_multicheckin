@@ -38,6 +38,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -145,12 +146,18 @@ if ($data = $form->get_data()) {
         if (!$result['changed']) {
             $message = get_string('session_unchanged', 'mod_multicheckin');
         } else {
-            $message = get_string('session_saved', 'mod_multicheckin',
-                format_string($result['occurrence']->name));
+            $message = get_string(
+                'session_saved',
+                'mod_multicheckin',
+                format_string($result['occurrence']->name)
+            );
             if (occurrence_editor::needs_recalc($result['changed'])) {
                 occurrence_editor::recalc($result['occurrence']);
-                $message .= ' ' . get_string('session_recalcd', 'mod_multicheckin',
-                    occurrence_editor::result_count((int) $session->id));
+                $message .= ' ' . get_string(
+                    'session_recalcd',
+                    'mod_multicheckin',
+                    occurrence_editor::result_count((int) $session->id)
+                );
             }
         }
 
@@ -172,13 +179,19 @@ if (session_manager::is_occurrence($session)) {
 } else {
     // The activity's own row. Editing it here still works, but the title is the
     // activity name, and a teacher should not discover that from the course page.
-    echo $OUTPUT->notification(get_string('session_edit_template', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('session_edit_template', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
 }
 
 if ($checkins > 0) {
-    echo $OUTPUT->notification(get_string('session_recalc_notice', 'mod_multicheckin', $checkins),
-        \core\output\notification::NOTIFY_WARNING, false);
+    echo $OUTPUT->notification(
+        get_string('session_recalc_notice', 'mod_multicheckin', $checkins),
+        \core\output\notification::NOTIFY_WARNING,
+        false
+    );
 }
 
 // The note, previewed and linked rather than edited in place. The window it

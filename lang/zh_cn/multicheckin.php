@@ -40,7 +40,7 @@ $string['multicheckin:viewreports'] = '查看考勤报表';
 $string['multicheckin:recompute'] = '重新计算考勤状态';
 $string['privacy:metadata'] = '多次签到考勤插件会记录签到信息（用户、时间、IP），用于考勤统计。';
 
-// 分区与字段。
+// Sections and fields.
 $string['timing'] = '时间与判定规则';
 $string['timestart'] = '考勤起点时间（T0）';
 $string['timestart_help'] = '所有签到窗口以及迟到、早退规则都以该时间为基准计算。';
@@ -78,7 +78,7 @@ $string['notifyrule_chain'] = '首次签到发给全班；之后每个点位只�
 $string['notifyrule_all'] = '每个签到点都发给尚未签到的学生';
 $string['notifyrule_first'] = '每个场次只有第一个签到点发提醒';
 
-// 地理围栏（防代签）。
+// Geofence (anti-proxy).
 $string['geosection'] = '防代签地理围栏';
 $string['geomode'] = '围栏模式';
 $string['geomode_help'] = '限制学生必须在校内现场才能自助签到。IP 校验校园网段；GPS 校验浏览器上报的坐标是否落在教室半径内；“两者都要”则须同时通过。除非在下方勾选，否则扫码签到不受围栏限制。';
@@ -92,8 +92,7 @@ $string['geoipranges_invalid'] = '这不是有效的 IP 地址或 CIDR 网段：
 $string['geolat'] = '教室纬度';
 $string['geolat_help'] = '教室中心的纬度（十进制度，例如 30.4635000）。';
 $string['geolng'] = '教室经度';
-$string['geolng_help'] = '教室中心点的经度，十进制度（例如 114.1234000）。'
-    . '请按 WGS-84 基准填写，即浏览器或手机直接读到的坐标。';
+$string['geolng_help'] = '教室中心点的经度，十进制度（例如 114.1234000）。请按 WGS-84 基准填写，即浏览器或手机直接读到的坐标。';
 $string['georadius'] = '允许半径（米）';
 $string['georadius_help'] = '当上报位置与中心的距离在此范围内时判定通过。取值范围 10–5000 米；阶梯教室用 100 米较合适。';
 $string['georadius_range'] = '半径必须在 10 至 5000 米之间。';
@@ -116,14 +115,14 @@ $string['privacy_geolog'] = '围栏校验记录';
 $string['geolog_note'] = '仅显示本场次最近 100 条围栏校验记录。';
 $string['ip'] = 'IP 地址';
 
-// 二维码刷新。
+// QR code refresh.
 $string['qrsection'] = '二维码选项';
 $string['qrrotation'] = '二维码刷新间隔（秒）';
 $string['qrrotation_help'] = '签名二维码令牌的更换频率。越短越安全（截图更快失效），但图片刷新也更频繁。允许范围 5–300 秒，15 秒是较均衡的取值。';
 $string['qrrotation_range'] = '刷新间隔必须在 {$a->min} 至 {$a->max} 秒之间。';
 
 
-// 签到点。
+// Check-in points.
 $string['pointname'] = '签到点';
 $string['point_new'] = '签到点 {$a}';
 $string['point_signin'] = '签到';
@@ -145,7 +144,7 @@ $string['openoffset'] = '开放（相对起点的偏移）';
 $string['openoffset_help'] = '相对考勤起点时间（T0）的秒数偏移。负值表示在考勤开始前开放。';
 $string['closeoffset'] = '关闭（相对起点的偏移）';
 
-// 状态。
+// Statuses.
 $string['status'] = '状态';
 $string['status_present'] = '出勤';
 $string['status_late'] = '迟到';
@@ -157,7 +156,7 @@ $string['open'] = '开放中';
 $string['closed'] = '已关闭';
 $string['mystatus'] = '我的状态';
 
-// 请假。
+// Leave.
 $string['leave'] = '请假';
 $string['leave_request'] = '申请请假';
 $string['leave_request_intro'] = '申请本场次请假。提交后立即生效，教师之后仍可复核。';
@@ -202,7 +201,7 @@ $string['leave_clear_confirm'] = '确定取消该请假？签到记录会保留�
 $string['leave_reviewall'] = '全部标记为已复核';
 $string['leaves_note'] = '请假提交即生效，本页用于事后复核。';
 
-// 操作与提示。
+// Actions and messages.
 $string['action'] = '操作';
 $string['checkin_now'] = '立即签到';
 $string['checkin_recorded_ok'] = '签到成功，已记录。';
@@ -241,7 +240,7 @@ $string['exportcsv'] = '导出 CSV';
 $string['resetcheckindata'] = '删除全部签到数据';
 $string['resetseries'] = '删除批量生成的考勤场次（{$a} 个）';
 
-// 报表列。
+// Report columns.
 $string['user'] = '用户';
 $string['studentid'] = '学号';
 $string['firstcheckin'] = '首次签到';
@@ -250,16 +249,16 @@ $string['latemin'] = '迟到（分钟）';
 $string['earlymin'] = '早退（分钟）';
 $string['points'] = '得分';
 
-// 同步备注。
+// Note synchronisation.
 $string['remark_late'] = '迟到 {$a} 分钟';
 $string['remark_early'] = '早退 {$a} 分钟';
 
-// 事件与任务。
+// Events and tasks.
 $string['event_checkin_recorded'] = '已记录签到';
 $string['task_finalise_sessions'] = '结算已结束的多次签到考勤场次';
 $string['task_send_reminders'] = '发送多次签到考勤提醒';
 
-// 提醒消息。
+// Reminder messages.
 $string['messageprovider:nextcheckin_reminder'] = '后续签到提醒';
 $string['msg_reminder_subject'] = '【{$a->course}】{$a->session} 签到提醒';
 $string['msg_reminder_small'] = '记得签到：{$a->course} / {$a->session}';
@@ -271,7 +270,7 @@ $string['msg_reminder_linksection'] = '<p>直接打开签到页面（下面的�
 $string['msg_reminder_body_nolink'] = '<p>课程「{$a->course}」的活动「{$a->session}」需要签到。</p><p>签到点「{$a->point}」现已开放，截止 {$a->time}，请记得签到。</p>';
 $string['msg_reminder_body_soon_nolink'] = '<p>课程「{$a->course}」的活动「{$a->session}」需要签到。</p><p>签到点「{$a->point}」将于 {$a->opens} 开放，截止 {$a->time}，请提前准备签到。</p>';
 
-// 隐私。
+// Privacy.
 $string['privacy:metadata:multicheckin_log'] = '用户的签到记录信息。';
 $string['privacy:metadata:multicheckin_log:userid'] = '执行签到的用户。';
 $string['privacy:metadata:multicheckin_log:timecreated'] = '签到记录时间。';
@@ -297,9 +296,9 @@ $string['privacy:metadata:multicheckin_leave:reviewedby'] = '复核该请假的�
 $string['privacy:metadata:multicheckin_leave:timecreated'] = '该请假的记录时间。';
 $string['privacy:metadata:multicheckin_leave:timemodified'] = '该请假最后一次修改的时间。';
 
-// ---- 共用教室位置库 ----
+// Shared classroom library.
 //
-// 全校共享的教室清单，教师直接选择即可，无需在每次活动中重复输入坐标。
+// The rooms the whole site shares, so a teacher picks one instead of typing coordinates into every activity.
 $string['placesection'] = '常用教室';
 $string['placeselectnone'] = '请选择常用教室……';
 $string['sharedplaceselect'] = '共享教室（来自地理定位插件）';
@@ -320,7 +319,7 @@ $string['place_newname'] = '教室名称不能为空。';
 $string['place_dupewarn'] = '已存在名为“{$a}”的教室。仍要再保存一个吗？';
 $string['place_duplicatewarning'] = '提示：已存在同名教室。';
 
-// 管理页。
+// Management page.
 $string['place_manage'] = '管理常用教室';
 $string['place_managetitle'] = '常用教室';
 $string['place_managedesc'] = '这些教室在本站所有课程间共享。在活动中选中教室时会将其坐标复制到该活动，因此在此修正错误录入不会改变已经在使用旧坐标的活动——那些活动需单独编辑。';
@@ -341,7 +340,7 @@ $string['placeusecount'] = '{$a} 个活动';
 $string['placeusezero'] = '未被使用';
 $string['placemodified'] = '最后修改';
 
-// 字段标签。
+// Field labels.
 $string['placename'] = '教室名称';
 $string['placename_help'] = '该教室在下拉列表中的显示名称，例如“主楼 A301”或“阶梯教室 3”。不同楼栋的同名教室可以重名。';
 $string['placedescription'] = '备注';
@@ -353,7 +352,7 @@ $string['placelongitude'] = '经度';
 $string['placedefaultradius'] = '默认半径（米）';
 $string['placedefaultradius_help'] = '选中该教室时建议使用的半径，单位为米。阶梯教室用 100 米较合适。';
 
-// 校验。
+// Validation.
 $string['placename_required'] = '请填写教室名称。';
 $string['placename_toolong'] = '名称过长，请控制在 255 个字符以内。';
 $string['placecoords_required'] = '请同时填写纬度和经度。';
@@ -363,20 +362,20 @@ $string['placelng_range'] = '经度须在 -180 至 180 之间。';
 $string['placeradius_range'] = '半径须在 10 至 50000 米之间。';
 $string['placeerror_generic'] = '教室保存失败，请检查各项取值后重试。';
 
-// 半径格式，与条件描述共用。
+// Radius format, shared with the availability condition.
 $string['radiusm'] = '{$a} 米';
 $string['radiuskm'] = '{$a} 公里';
 
-// 权限。
+// Capabilities.
 $string['multicheckin:manageplaces'] = '管理共用教室位置库';
 
-// 隐私：共用教室位置库。
+// Privacy: the shared classroom library.
 $string['privacy:metadata:multicheckin_place'] = '共用教室位置库。其中的坐标描述的是建筑物而非个人；唯一的个人数据是最后编辑该记录的用户。';
 $string['privacy:metadata:multicheckin_place:usermodified'] = '最后新增或编辑该教室的用户。';
 $string['privacy:metadata:multicheckin_place:timecreated'] = '该教室首次保存的时间。';
 $string['privacy:metadata:multicheckin_place:timemodified'] = '该教室最后编辑的时间。';
 
-// ---- 中间考勤（v1.4.0） ----
+// Mid-class check-ins (v1.4.0).
 $string['midsection'] = '中间考勤';
 $string['midsection_help'] = '签到与签退之间的点名轮次。在此设置次数与每轮的开始时间；精细调整（精确到秒、逐点密码、二维码、提醒）仍在「管理签到点」页面进行。修改次数时尽量保留现有签到点及其记录：末尾多余的点连同记录删除，缺少的按序补建。';
 $string['midcount'] = '中间考勤次数';
@@ -392,7 +391,7 @@ $string['midopen_invalid'] = '开始时间须在 0–2880 分钟之间。';
 $string['midwindow_invalid'] = '窗口时长须在 1–480 分钟之间。';
 $string['midpoints_synced'] = '已按设置同步 {$a->sessions} 个场次的中间签到：新增 {$a->added} 个、删除 {$a->removed} 个、补签 {$a->signed} 条。已有签到记录的点位已保留。';
 
-// ---- 各状态分值（v1.4.0） ----
+// Points per status (v1.4.0).
 $string['statuspointssection'] = '各状态计分分值';
 $string['statuspointssection_help'] = '每种最终状态获得的原始分值。课程成绩 = 所得分值 ÷ 各状态中的最大分值 × 上方最高分——即默认设置下「正常」得该活动满分，「迟到」得一半，依此类推。每次签到后、重新计算后、场次结束时都会自动推送成绩到课程成绩册。';
 $string['pointspresent'] = '正常（分值）';
@@ -404,10 +403,10 @@ $string['pointsabsent'] = '缺勤（分值）';
 $string['pointsleave'] = '请假（分值）';
 $string['statuspoints_invalid'] = '分值须在 0–1000 之间。';
 
-// ---- 批量考勤场次（v1.7.0） ----
+// Attendance occurrences (v1.7.0).
 //
-// 一个活动承载一学期的多次考勤：活动本身保存共用配置（宽限、围栏、分值、
-// 中间考勤结构），下面挂若干「场次」，每个场次有自己的日期与时间。
+// One activity carries a term of attendance: the activity holds the shared settings (grace, fence, points,
+// mid-class plan) and hangs occurrences below it, each with its own date and time.
 $string['seriessection'] = '批量考勤场次';
 $string['seriessection_help'] = '为本次教学周期一次性生成多个考勤场次。活动本身保存共用设置（时间规则、围栏、二维码、分值、中间考勤结构），每个场次各自拥有日期与签到点。不启用批量时，活动本身就是唯一的一场考勤，行为与以前完全一致。';
 $string['series_repeat'] = '重复方式';
@@ -452,7 +451,7 @@ $string['series_customtime_hint'] = 'HH:MM';
 $string['series_customrow_invalid'] = '第 {$a} 场：请按 YYYY-MM-DD 填写真实日期、按 HH:MM 填写时间。';
 $string['series_customrows_required'] = '至少填写一场的日期与时间，或改选其他重复方式。';
 
-// 场次列表与批量管理。
+// Occurrence list and bulk actions.
 $string['occurrences'] = '考勤场次';
 $string['occurrence_n'] = '第 {$a} 场';
 $string['occurrence_select'] = '选择场次';
@@ -478,9 +477,9 @@ $string['series_none_yet'] = '本活动还没有生成批量场次。';
 $string['series_is_template'] = '该记录是活动的配置模板，不能作为场次删除。';
 $string['series_bad_session'] = '该场次不属于本活动，或已被删除。';
 
-// ---- 场次编辑（v1.10.0）----
-// 教师可单独给某一场改标题并写明这节要做什么；开始/结束时间同样可改，
-// 因此下文有「重算」相关措辞——签到点全部以开始时间为基准。
+// Occurrence editing (v1.10.0).
+// A teacher can retitle one occurrence and say what the class is for; the start and end times can be edited too,
+// which is why "recompute" appears below - every check-in point is placed from the start time.
 $string['session_title'] = '标题';
 $string['session_title_help'] = '本场次的名称，例如「第 3 周：地图投影」。默认沿用活动名，而活动名对每个场次都一样；给单独一场起名，整期场次才读得出来。';
 $string['session_title_required'] = '标题不能为空。';
@@ -496,7 +495,7 @@ $string['session_time_invalid'] = '日期时间无法识别，日期请用 YYYY-
 $string['session_time_order'] = '结束时间必须晚于开始时间。';
 $string['session_time_range'] = '年份需在 2000 至 2100 之间。';
 
-// 单场次编辑页。
+// Single-occurrence edit page.
 $string['session_edit'] = '编辑本场次';
 $string['session_edit_link'] = '编辑本场次';
 $string['session_edit_intro'] = '修改本场次的标题或开始/结束时间。说明在弹出的对话框里编辑，点按钮打开。签到点全部相对开始时间安放，改动开始时间会同步移动各签到点的时间窗口。';
@@ -504,7 +503,7 @@ $string['session_edit_template'] = '本活动只有一个场次，因此正在�
 $string['session_saved'] = '已保存「{$a}」。';
 $string['session_unchanged'] = '没有需要保存的改动。';
 
-// 改动已有签到场次的时间。
+// Changing the times of an occurrence that already has check-ins.
 $string['session_note'] = '编辑本场次说明';
 $string['session_note_intro'] = '说明在弹出的对话框里编辑，这样列出整学期场次的页面就不必为每一行都加载一个编辑器。可以排版、可以插图；学生会在活动页看到这段说明。';
 $string['session_note_saved'] = '说明已保存。';
@@ -517,7 +516,7 @@ $string['session_recalc_notice'] = '本场次已有 {$a} 条签到记录。修�
 $string['session_recalc_required'] = '请先勾选确认：修改时间会按新时间重新判定本场次已收集的签到记录。';
 $string['session_recalcd'] = '已重算 {$a} 条判定。';
 
-// 系列页的整表编辑。
+// Whole-table editing on the series page.
 $string['series_savebatch'] = '保存全部修改';
 $string['series_savebatch_desc'] = '可直接在上表中修改标题、说明与开始/结束时间，一次保存整页。日期格式 YYYY-MM-DD，时间格式 HH:MM。';
 $string['series_saved'] = '已保存 {$a->sessions} 个场次，重算 {$a->judged} 条判定。';
@@ -525,14 +524,14 @@ $string['series_save_errors'] = '本次未保存：有行无法读取。需要�
 $string['series_recalc_needed'] = '本次未保存：{$a} 个场次已有签到且时间被改动。请在下方勾选确认后再次保存。';
 $string['series_recalc_ack'] = '我已知悉：已有签到的场次将按新时间重新判定。';
 
-// 场次结构表。
+// Occurrence structure table.
 $string['seqno'] = '序号';
 $string['occurrencetime'] = '时间';
 $string['occurrencestatus'] = '状态';
 $string['occurrencepoints'] = '签到点数';
 $string['occurrencecheckins'] = '签到人次';
 
-// 成绩汇总。
+// Grade aggregation.
 $string['gradesection'] = '成绩汇总方式';
 $string['gradesection_help'] = '一次活动有多个考勤场次时，课程成绩册中本活动的分数如何由各场次得出。';
 $string['gradeaggregate'] = '成绩汇总方式';
@@ -544,13 +543,13 @@ $string['gradebestcount'] = '取最好几次';
 $string['gradebestcount_help'] = '仅当汇总方式选择「成绩最好的若干次平均」时生效。超过实际场次数时按实际场次数计算。';
 $string['gradebestcount_invalid'] = '取最好的次数须在 1–{$a} 之间。';
 
-// 全场次报表。
+// Whole-series report.
 $string['reportall'] = '全场次考勤汇总';
 $string['report_expectedcount'] = '应签到 {$a} 人';
 $string['reportall_link'] = '全部场次汇总报表';
 $string['reportone_link'] = '单场考勤报表';
 
-// 报表自身的控件。
+// The report's own controls.
 $string['report_clear'] = '清除';
 $string['report_nomatch'] = '没有符合条件的学生。';
 $string['report_search'] = '搜索';
@@ -565,12 +564,12 @@ $string['attendancecount'] = '出勤次数';
 $string['aggregate_note_all'] = '「成绩」列为该生所有已产生结果场次的平均分。';
 $string['aggregate_note_best'] = '「成绩」列为该生成绩最好的 {$a} 场次的平均分。';
 
-// ---- 站点管理 ----
+// Site administration.
 $string['maxsessions'] = '单次生成的场次上限';
 $string['maxsessions_desc'] = '一次保存或重建，最多能为一个活动生成多少场考勤。此上限用于约束单次表单提交可能触发的工作量：若按天重复却把结束年份填错，会生成数千个场次及其签到点。默认 60 场，适用于一学期每周两次课的安排。超过 {$a} 的取值按 {$a} 处理。';
 
-// ---- 教师手动改签（v1.7.7） ----
-// 学生走 checkin.php 自己签；这里是有权限的教师补录、改正与撤销的通道。
+// Teacher edits (v1.7.7).
+// Students sign in through checkin.php; this is the channel a permitted teacher uses to add, correct or withdraw a record.
 $string['marks_edit'] = '编辑';
 $string['marks_edit_link'] = '编辑签到记录';
 $string['marks_edit_heading'] = '编辑 {$a} 的签到记录';
@@ -598,8 +597,8 @@ $string['marks_truncated'] = '注意：本次提交只收到 {$a->got} / {$a->wa
 $string['markall_link'] = '整班点名';
 $string['nopoints'] = '本场次还没有签到点，请先到场次管理页添加。';
 
-// ---- 围栏审计（v1.7.7） ----
-// 只读页：把 geo_manager 已经写入的判定记录读出来，回答"围栏为什么没起作用"。
+// Geofence audit (v1.7.7).
+// Read-only page: it reports what geo_manager already decided, answering "why did the fence not stop this one".
 $string['audit_heading'] = '围栏审计';
 $string['audit_link'] = '围栏审计';
 $string['audit_config'] = '当前围栏配置';
@@ -711,8 +710,8 @@ $string['privacy:metadata:multicheckin_photoreq:reason'] = '学生填写的情�
 $string['privacy:metadata:multicheckin_photoreq:status'] = '申请的状态：待核验 / 已通过 / 已驳回。';
 $string['privacy:metadata:multicheckin_photoreq:reviewedby'] = '处理该申请的教师。';
 $string['privacy:metadata:multicheckin_photoreq:timecreated'] = '申请提交时间。';
-// 拍照许可。2.0.23 起它是一行记录而不再是会话里的一项，这正是复制出去的链接
-// 能在另一个浏览器里生效的原因，也是这一行必须写明属于谁的原因。
+// Photo permission. Since 2.0.23 it is a row of its own rather than an item in the session, which is what
+// makes a copied link work in another browser - and why that row has to name who it belongs to.
 $string['privacy:metadata:multicheckin_pass'] = '为某个签到点开具的短期拍照许可，使同一条链接在该学生已登录的任意浏览器中都可使用。';
 $string['privacy:metadata:multicheckin_pass:userid'] = '许可所属的学生。他人无法使用。';
 $string['privacy:metadata:multicheckin_pass:clientgeo'] = '开具许可时通过位置校验的坐标，在记录签到时重新核验。';

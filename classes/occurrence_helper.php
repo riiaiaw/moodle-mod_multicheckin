@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Shared rendering for attendance occurrences.
  *
@@ -30,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class occurrence_helper {
-
     /** @var string State: the occurrence is running now. */
     public const STATE_CURRENT = 'current';
     /** @var string State: the occurrence has finished. */
@@ -128,8 +125,13 @@ class occurrence_helper {
      * @param array $extra Extra hidden fields to carry through the switch.
      * @return string HTML.
      */
-    public static function render_picker(int $cmid, array $sessions, int $selectedid, string $target,
-            array $extra = []): string {
+    public static function render_picker(
+        int $cmid,
+        array $sessions,
+        int $selectedid,
+        string $target,
+        array $extra = []
+    ): string {
         if (count($sessions) < 2) {
             return '';
         }
@@ -140,7 +142,7 @@ class occurrence_helper {
         }
 
         $select = \html_writer::select($options, 'session', (string) $selectedid, false, [
-            // `.form-select` is the Bootstrap 5 name; `.custom-select` was removed
+            // The `.form-select` class is the Bootstrap 5 name; `.custom-select` was removed
             // in 5.0 and left the occurrence switcher as a browser-default control.
             'class' => 'form-select',
             'onchange' => 'this.form.submit()',
@@ -162,8 +164,11 @@ class occurrence_helper {
                 'value' => $value,
             ]);
         }
-        $form .= \html_writer::tag('label', get_string('occurrence_select', 'mod_multicheckin'),
-            ['for' => 'multicheckin-occurrence', 'class' => 'mb-0 text-nowrap']);
+        $form .= \html_writer::tag(
+            'label',
+            get_string('occurrence_select', 'mod_multicheckin'),
+            ['for' => 'multicheckin-occurrence', 'class' => 'mb-0 text-nowrap']
+        );
         $form .= $select;
         $form .= \html_writer::end_tag('form');
 
@@ -184,7 +189,8 @@ class occurrence_helper {
             \html_writer::span(get_string('occurrencetime', 'mod_multicheckin') . '：')
             . userdate($session->timestart) . ' – ' . userdate($session->timeend)
             . ' &nbsp; ' . $badge,
-            'mb-3');
+            'mb-3'
+        );
     }
 
     /**
@@ -212,11 +218,17 @@ class occurrence_helper {
 
         return \html_writer::div(
             \html_writer::tag('strong', get_string('session_description', 'mod_multicheckin')),
-            'text-muted small mb-1')
+            'text-muted small mb-1'
+        )
             . \html_writer::div(
-                description_editor::render($description,
-                    description_editor::format_of($session), (int) $session->id, $context),
-                'multicheckin-session-description mb-3');
+                description_editor::render(
+                    $description,
+                    description_editor::format_of($session),
+                    (int) $session->id,
+                    $context
+                ),
+                'multicheckin-session-description mb-3'
+            );
     }
 
     /**
@@ -260,8 +272,13 @@ class occurrence_helper {
      * @param string $error Language key of the error to show, or ''.
      * @return string HTML.
      */
-    private static function time_inputs(int $id, string $prefix, string $date, string $clock,
-            string $error = ''): string {
+    private static function time_inputs(
+        int $id,
+        string $prefix,
+        string $date,
+        string $clock,
+        string $error = ''
+    ): string {
         $dateprefix = $prefix === 'date' ? 'date' : 'enddate';
         $clockprefix = $prefix === 'date' ? 'clock' : 'endclock';
 
@@ -276,7 +293,8 @@ class occurrence_helper {
                 'placeholder' => 'HH:MM',
                 'class' => 'form-control form-control-sm multicheckin-when' . ($error !== '' ? ' is-invalid' : ''),
             ]),
-            'd-flex gap-1');
+            'd-flex gap-1'
+        );
     }
 
     /**
@@ -305,8 +323,14 @@ class occurrence_helper {
      * @param array $errors Field errors to mark up, id => [field => language key].
      * @return string HTML.
      */
-    public static function render_table(int $cmid, array $sessions, array $stats, int $selectedid,
-            array $posted = [], array $errors = []): string {
+    public static function render_table(
+        int $cmid,
+        array $sessions,
+        array $stats,
+        int $selectedid,
+        array $posted = [],
+        array $errors = []
+    ): string {
         $table = new \html_table();
         $table->head = [
             get_string('seqno', 'mod_multicheckin'),
@@ -345,11 +369,21 @@ class occurrence_helper {
                 'maxlength' => 255,
             ], (string) ($rowerrors['name'] ?? ''));
 
-            $startcell = self::time_inputs($id, 'date', $startdate, $startclock,
-                (string) ($rowerrors['timestart'] ?? ''));
+            $startcell = self::time_inputs(
+                $id,
+                'date',
+                $startdate,
+                $startclock,
+                (string) ($rowerrors['timestart'] ?? '')
+            );
 
-            $endcell = self::time_inputs($id, 'enddate', $enddate, $endclock,
-                (string) ($rowerrors['timeend'] ?? ''));
+            $endcell = self::time_inputs(
+                $id,
+                'enddate',
+                $enddate,
+                $endclock,
+                (string) ($rowerrors['timeend'] ?? '')
+            );
 
             $desccell = description_editor::note_cell($cmid, $session, 'series');
 
@@ -371,31 +405,47 @@ class occurrence_helper {
             if ($photoon) {
                 $photoattrs['checked'] = 'checked';
             }
-            $photocell = \html_writer::tag('label',
+            $photocell = \html_writer::tag(
+                'label',
                 \html_writer::empty_tag('input', $photoattrs)
                 . \html_writer::span(get_string('session_photorequired', 'mod_multicheckin'), 'sr-only'),
-                ['for' => 'multicheckin-photorequired-' . $id, 'class' => 'form-check-label']);
+                ['for' => 'multicheckin-photorequired-' . $id, 'class' => 'form-check-label']
+            );
 
-            $viewurl = new \moodle_url('/mod/multicheckin/view.php',
-                ['id' => $cmid, 'session' => $id]);
-            $editurl = new \moodle_url('/mod/multicheckin/session_edit.php',
-                ['id' => $cmid, 'session' => $id, 'return' => 'series']);
+            $viewurl = new \moodle_url(
+                '/mod/multicheckin/view.php',
+                ['id' => $cmid, 'session' => $id]
+            );
+            $editurl = new \moodle_url(
+                '/mod/multicheckin/session_edit.php',
+                ['id' => $cmid, 'session' => $id, 'return' => 'series']
+            );
 
             // The occurrence being managed is marked, so the table doubles as
             // the answer to "which one am I editing?".
             $seqcell = $iscurrent ? \html_writer::tag('strong', $session->seqno) : $session->seqno;
-            $namespan = \html_writer::span(userdate($session->timestart,
-                get_string('strftimedateshort', 'langconfig')));
+            $namespan = \html_writer::span(userdate(
+                $session->timestart,
+                get_string('strftimedateshort', 'langconfig')
+            ));
             $titlecell .= \html_writer::div($namespan, 'text-muted small mt-1');
 
-            $actions = \html_writer::link($editurl, get_string('edit'),
-                ['class' => 'me-2 fw-bold']);
+            $actions = \html_writer::link(
+                $editurl,
+                get_string('edit'),
+                ['class' => 'me-2 fw-bold']
+            );
             $actions .= \html_writer::link($viewurl, get_string('view'), ['class' => 'me-2']);
             if ($id !== $selectedid) {
-                $manageurl = new \moodle_url('/mod/multicheckin/manage.php',
-                    ['id' => $cmid, 'session' => $id]);
-                $actions .= \html_writer::link($manageurl,
-                    get_string('managepoints', 'mod_multicheckin'), ['class' => 'me-2']);
+                $manageurl = new \moodle_url(
+                    '/mod/multicheckin/manage.php',
+                    ['id' => $cmid, 'session' => $id]
+                );
+                $actions .= \html_writer::link(
+                    $manageurl,
+                    get_string('managepoints', 'mod_multicheckin'),
+                    ['class' => 'me-2']
+                );
             }
 
             $deleurl = new \moodle_url('/mod/multicheckin/series.php', [
@@ -404,9 +454,12 @@ class occurrence_helper {
                 'session' => $id,
                 'sesskey' => sesskey(),
             ]);
-            $actions .= \html_writer::link($deleurl, get_string('delete'),
+            $actions .= \html_writer::link(
+                $deleurl,
+                get_string('delete'),
                 ['class' => 'text-danger', 'data-multicheckin-confirm' =>
-                    get_string('series_deleteone_confirm', 'mod_multicheckin')]);
+                get_string('series_deleteone_confirm', 'mod_multicheckin')]
+            );
 
             $table->data[] = [
                 $seqcell,

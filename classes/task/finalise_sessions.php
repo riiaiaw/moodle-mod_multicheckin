@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin\task;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Scheduled task: recompute statuses for any session that has ended but is not yet
  * finalised. This is the safety net that guarantees "absent" is applied to students
@@ -28,7 +26,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class finalise_sessions extends \core\task\scheduled_task {
-
     /**
      * Task name shown in admin.
      *
@@ -84,9 +81,11 @@ class finalise_sessions extends \core\task\scheduled_task {
         // every single-session activity on upgrade.
         $now = time();
         $since = $now - (7 * DAYSECS);
-        $sessions = $DB->get_records_select('multicheckin',
+        $sessions = $DB->get_records_select(
+            'multicheckin',
             'timefinalised = 0 AND timeend < :now AND timeend > :since',
-            ['now' => $now, 'since' => $since]);
+            ['now' => $now, 'since' => $since]
+        );
 
         // Group the ended sessions by their activity so the gradebook is pushed
         // once per activity rather than once per occurrence. Fifteen pushes of

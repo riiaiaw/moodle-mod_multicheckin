@@ -31,7 +31,6 @@ require_once(__DIR__ . '/restore_multicheckin_stepslib.php');
  * complete restore of the activity.
  */
 class restore_multicheckin_activity_task extends restore_activity_task {
-
     /**
      * No particular settings for this activity.
      *
@@ -50,7 +49,9 @@ class restore_multicheckin_activity_task extends restore_activity_task {
      */
     protected function define_my_steps() {
         $this->add_step(new restore_multicheckin_activity_structure_step(
-            'multicheckin_structure', 'multicheckin.xml'));
+            'multicheckin_structure',
+            'multicheckin.xml'
+        ));
     }
 
     /**

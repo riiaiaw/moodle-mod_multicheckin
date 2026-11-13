@@ -34,6 +34,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -81,9 +82,9 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// ---- Refusals ------------------------------------------------------------
+// Refusals.
 // Stated before the form is built so the student is told why rather than being
-// shown a form whose submission would be rejected.
+// Shown a form whose submission would be rejected.
 $existing = leave_manager::record((int) $session->id, (int) $USER->id);
 
 $haslog = $DB->record_exists('multicheckin_log', [
@@ -92,16 +93,24 @@ $haslog = $DB->record_exists('multicheckin_log', [
 ]);
 
 if (!leave_manager::is_open($session)) {
-    redirect($viewurl, get_string('leave_closed', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('leave_closed', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 // A leave outranks the logs, so a leave filed after a check-in would silently
 // erase attendance the student really did have. Refusing is the honest answer;
 // the student can ask the teacher, who can set the status from the sheet.
 if ($haslog) {
-    redirect($viewurl, get_string('leave_haslog', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('leave_haslog', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $form = new leave_form($PAGE->url, [
@@ -112,8 +121,14 @@ $form = new leave_form($PAGE->url, [
 ]);
 
 if ($data = $form->get_data()) {
-    leave_manager::save($session, (int) $USER->id, trim((string) $data->reason),
-        leave_manager::ORIGIN_STUDENT, (int) $data->leavefile, (int) $USER->id);
+    leave_manager::save(
+        $session,
+        (int) $USER->id,
+        trim((string) $data->reason),
+        leave_manager::ORIGIN_STUDENT,
+        (int) $data->leavefile,
+        (int) $USER->id
+    );
 
     // The status is settled immediately, so the report, the badge and the
     // gradebook all agree with what the student was just told. Only this
@@ -123,8 +138,12 @@ if ($data = $form->get_data()) {
     checkin_engine::refresh_user($session, (int) $USER->id);
     multicheckin_update_grades($session, (int) $USER->id);
 
-    redirect($viewurl, get_string('leave_submitted', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $viewurl,
+        get_string('leave_submitted', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -135,21 +154,31 @@ echo html_writer::div(get_string('leave_request_intro', 'mod_multicheckin'), 'te
 // Stated on the page rather than only in the README: the app's web view cannot
 // always hand a file back to the server, and a student who has already written
 // the request should not lose it over an attachment.
-echo $OUTPUT->notification(get_string('leave_appnote', 'mod_multicheckin'),
-    \core\output\notification::NOTIFY_INFO, false);
+echo $OUTPUT->notification(
+    get_string('leave_appnote', 'mod_multicheckin'),
+    \core\output\notification::NOTIFY_INFO,
+    false
+);
 
 if ($existing) {
-    echo $OUTPUT->notification(get_string('leave_already', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_WARNING, false);
+    echo $OUTPUT->notification(
+        get_string('leave_already', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_WARNING,
+        false
+    );
 }
 
 // Which session this leave is for. The picker is only useful when a series
 // exists; for a single-session activity it is one line of date and time.
 echo html_writer::div(
-    html_writer::tag('strong', get_string('leave_for', 'mod_multicheckin',
-        format_string($template->name))) . ' — '
+    html_writer::tag('strong', get_string(
+        'leave_for',
+        'mod_multicheckin',
+        format_string($template->name)
+    )) . ' — '
     . userdate($session->timestart) . ' – ' . userdate($session->timeend, get_string('strftimetime')),
-    'mb-3');
+    'mb-3'
+);
 
 $form->display();
 

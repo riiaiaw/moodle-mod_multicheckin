@@ -31,6 +31,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -65,9 +66,12 @@ if (!$template) {
 
 $session = session_manager::resolve_session($template, $sessionparam);
 if (!$session) {
-    redirect(new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
-        get_string('series_bad_session', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
+        get_string('series_bad_session', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 // The student must belong to this activity. Without the check, a hand-edited
@@ -96,10 +100,10 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// ---- Remove every record this student has in this session ----------------
+// Remove every record this student has in this session.
 // Coarser than unticking the boxes, and separate because it is the action a
 // teacher takes when a student signed in for somebody else: the whole session
-// has to go, not one point.
+// Has to go, not one point.
 if ($action === 'clear' && confirm_sesskey()) {
     // The photographs go first: they are filed under the log row id, so once
     // the rows are gone there is nothing left to find them by.
@@ -109,8 +113,12 @@ if ($action === 'clear' && confirm_sesskey()) {
         'userid' => (int) $user->id,
     ]);
     mark_manager::resync($session, (int) $user->id);
-    redirect($reporturl, get_string('marks_cleared', 'mod_multicheckin', fullname($user)), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $reporturl,
+        get_string('marks_cleared', 'mod_multicheckin', fullname($user)),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 $states = mark_manager::point_states($session, $points, (int) $user->id);
@@ -143,8 +151,14 @@ if ($data = $form->get_data()) {
     $wantsleave = !empty($data->leave);
     $leavechange = '';
     if ($wantsleave && !$leave) {
-        leave_manager::save($session, (int) $user->id, '',
-            leave_manager::ORIGIN_TEACHER, null, (int) $USER->id);
+        leave_manager::save(
+            $session,
+            (int) $user->id,
+            '',
+            leave_manager::ORIGIN_TEACHER,
+            null,
+            (int) $USER->id
+        );
         $leavechange = get_string('leave_granted', 'mod_multicheckin', 1);
     } else if (!$wantsleave && $leave) {
         leave_manager::remove($session, (int) $user->id);
@@ -162,8 +176,11 @@ if ($data = $form->get_data()) {
     }
     $type = \core\output\notification::NOTIFY_SUCCESS;
     if ($totals['errors']) {
-        $message .= ' ' . get_string('marks_some_rejected', 'mod_multicheckin',
-            count($totals['errors']));
+        $message .= ' ' . get_string(
+            'marks_some_rejected',
+            'mod_multicheckin',
+            count($totals['errors'])
+        );
         $type = \core\output\notification::NOTIFY_WARNING;
     }
 
@@ -175,25 +192,39 @@ echo $OUTPUT->heading(get_string('marks_edit_heading', 'mod_multicheckin', fulln
 
 if (count($sessions) > 1) {
     echo \mod_multicheckin\occurrence_helper::render_picker(
-        $cm->id, $sessions, (int) $session->id, 'mark.php', ['userid' => (int) $user->id]);
+        $cm->id,
+        $sessions,
+        (int) $session->id,
+        'mark.php',
+        ['userid' => (int) $user->id]
+    );
 }
 
 if (!$points) {
-    echo $OUTPUT->notification(get_string('nopoints', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_WARNING, false);
+    echo $OUTPUT->notification(
+        get_string('nopoints', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_WARNING,
+        false
+    );
 } else {
     echo html_writer::div(get_string('marks_intro', 'mod_multicheckin'), 'text-muted mb-3');
     $form->display();
 
     $clearurl = new moodle_url($pageurl, ['action' => 'clear', 'sesskey' => sesskey()]);
     echo html_writer::div(
-        html_writer::link($clearurl, get_string('marks_clear', 'mod_multicheckin'),
-            ['class' => 'btn btn-outline-danger btn-sm']),
-        'mt-3');
+        html_writer::link(
+            $clearurl,
+            get_string('marks_clear', 'mod_multicheckin'),
+            ['class' => 'btn btn-outline-danger btn-sm']
+        ),
+        'mt-3'
+    );
 }
 
-$backurl = new moodle_url('/mod/multicheckin/report.php',
-    ['id' => $cm->id, 'session' => $session->id]);
+$backurl = new moodle_url(
+    '/mod/multicheckin/report.php',
+    ['id' => $cm->id, 'session' => $session->id]
+);
 echo html_writer::div($OUTPUT->single_button($backurl, get_string('back'), 'get'), 'mt-3');
 
 echo $OUTPUT->footer();

@@ -24,8 +24,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The four rules behind the report's controls, as pure functions.
  *
@@ -52,7 +50,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class report_filter {
-
     /** Sort by the student's full name, in the language of the course. */
     public const SORT_NAME = 'name';
 

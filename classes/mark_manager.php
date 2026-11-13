@@ -16,14 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
-// Removing a check-in log has to take its photo with it, so mark_manager needs
-// photo_manager. Deletes run from pages opened directly by URL, where the
-// component's autoloader is not always primed; requiring it here (the same
-// pattern session_manager uses for schedule_planner) keeps it available.
-require_once(__DIR__ . '/photo_manager.php');
-
 /**
  * Teacher-side editing of check-in records.
  *
@@ -59,7 +51,6 @@ require_once(__DIR__ . '/photo_manager.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mark_manager {
-
     /** @var string Method stored on a record a teacher created or corrected. */
     public const METHOD_MANUAL = 'manual';
 
@@ -119,8 +110,15 @@ class mark_manager {
         [$hour, $minute] = array_map('intval', explode(':', $clock));
         $date = usergetdate($open);
 
-        $time = make_timestamp((int) $date['year'], (int) $date['mon'], (int) $date['mday'],
-            $hour, $minute, 0, 99);
+        $time = make_timestamp(
+            (int) $date['year'],
+            (int) $date['mon'],
+            (int) $date['mday'],
+            $hour,
+            $minute,
+            0,
+            99
+        );
 
         if ($time < $open && $time + DAYSECS <= $close) {
             $time += DAYSECS;
@@ -274,8 +272,12 @@ class mark_manager {
      *         Errors are keyed by point id. Nothing is written for a point that
      *         failed validation; the rest of the form still applies.
      */
-    public static function apply_marks(\stdClass $session, array $points, int $userid,
-            array $submitted): array {
+    public static function apply_marks(
+        \stdClass $session,
+        array $points,
+        int $userid,
+        array $submitted
+    ): array {
         global $DB;
 
         $totals = ['added' => 0, 'updated' => 0, 'removed' => 0, 'unchanged' => 0, 'errors' => []];
@@ -360,8 +362,11 @@ class mark_manager {
                     // Duplicate rows for one point are housekeeping, not an
                     // edit: the earliest row is kept exactly as it is - same
                     // time, same method - and only the extras are removed.
-                    self::drop_duplicates($session, $existing,
-                        (int) reset($existing)->id);
+                    self::drop_duplicates(
+                        $session,
+                        $existing,
+                        (int) reset($existing)->id
+                    );
                     $totals['updated']++;
                 } else {
                     $totals['unchanged']++;

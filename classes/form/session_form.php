@@ -41,7 +41,6 @@ require_once($CFG->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class session_form extends \moodleform {
-
     /**
      * Build the form.
      */
@@ -60,8 +59,12 @@ class session_form extends \moodleform {
         $mform->addElement('hidden', 'return', (string) ($this->_customdata['return'] ?? ''));
         $mform->setType('return', PARAM_ALPHA);
 
-        $mform->addElement('text', 'name', get_string('session_title', 'mod_multicheckin'),
-            ['size' => 64, 'maxlength' => 255]);
+        $mform->addElement(
+            'text',
+            'name',
+            get_string('session_title', 'mod_multicheckin'),
+            ['size' => 64, 'maxlength' => 255]
+        );
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addHelpButton('name', 'session_title', 'mod_multicheckin');
@@ -80,8 +83,11 @@ class session_form extends \moodleform {
         // may be photographed and the lecture beside it not - and it is
         // deliberately absent from the activity form, whose save pushes its
         // values onto every occurrence of the term.
-        $mform->addElement('selectyesno', 'photorequired',
-            get_string('session_photorequired', 'mod_multicheckin'));
+        $mform->addElement(
+            'selectyesno',
+            'photorequired',
+            get_string('session_photorequired', 'mod_multicheckin')
+        );
         $mform->setType('photorequired', PARAM_INT);
         $mform->setDefault('photorequired', 0);
         $mform->addHelpButton('photorequired', 'session_photorequired', 'mod_multicheckin');
@@ -91,8 +97,12 @@ class session_form extends \moodleform {
         // moved freely, and a warning that fires when there is nothing to warn
         // about is a warning teachers learn to dismiss without reading.
         if ($checkins > 0) {
-            $mform->addElement('advcheckbox', 'recalcok', get_string('session_recalc', 'mod_multicheckin'),
-                get_string('session_recalc_label', 'mod_multicheckin', $checkins));
+            $mform->addElement(
+                'advcheckbox',
+                'recalcok',
+                get_string('session_recalc', 'mod_multicheckin'),
+                get_string('session_recalc_label', 'mod_multicheckin', $checkins)
+            );
             $mform->setType('recalcok', PARAM_INT);
             $mform->addHelpButton('recalcok', 'session_recalc', 'mod_multicheckin');
         }

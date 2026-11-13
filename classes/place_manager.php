@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The site-wide library of named classroom locations.
  *
@@ -42,7 +40,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class place_manager {
-
     /** @var string Table name. */
     public const TABLE = 'multicheckin_place';
 
@@ -122,9 +119,15 @@ class place_manager {
         if ($name === '') {
             return null;
         }
-        $records = $DB->get_records_select(self::TABLE,
+        $records = $DB->get_records_select(
+            self::TABLE,
             $DB->sql_like('name', ':name', false, false),
-            ['name' => $name], 'id ASC', '*', 0, 1);
+            ['name' => $name],
+            'id ASC',
+            '*',
+            0,
+            1
+        );
         return $records ? reset($records) : null;
     }
 
@@ -283,7 +286,7 @@ class place_manager {
         $lat = (float) $place->latitude;
         $lng = (float) $place->longitude;
 
-        // ~1e-7 degrees, i.e. about 1.1 cm at the equator.
+        // About 1e-7 degrees, i.e. roughly 1.1 cm at the equator.
         $tolerance = 0.0000001;
 
         $sql = "SELECT COUNT(id)
@@ -317,8 +320,10 @@ class place_manager {
 
         $latraw = $data['lat'] ?? null;
         $lngraw = $data['lng'] ?? null;
-        if ($latraw === null || $latraw === '' || $lngraw === null || $lngraw === ''
-                || !is_numeric($latraw) || !is_numeric($lngraw)) {
+        if (
+            $latraw === null || $latraw === '' || $lngraw === null || $lngraw === ''
+                || !is_numeric($latraw) || !is_numeric($lngraw)
+        ) {
             throw new \invalid_parameter_exception('placecoords_required');
         }
 

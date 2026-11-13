@@ -32,6 +32,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -79,9 +80,12 @@ if (!$template) {
 
 $session = session_manager::resolve_session($template, $sessionparam);
 if (!$session) {
-    redirect(new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
-        get_string('series_bad_session', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
+        get_string('series_bad_session', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $sessions = session_manager::list_sessions($template);
@@ -92,7 +96,7 @@ $points = session_manager::get_points((int) $session->id);
 // check in. Sorted in PHP: the sheet is read top to bottom, and a roster that
 // reshuffles between visits is unusable for taking the roll.
 $users = \mod_multicheckin\audience_manager::participants($session, $context);
-usort($users, function($a, $b) {
+usort($users, function ($a, $b) {
     $left = \core_text::strtolower($a->lastname . ' ' . $a->firstname);
     $right = \core_text::strtolower($b->lastname . ' ' . $b->firstname);
     return $left <=> $right;
@@ -112,7 +116,7 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// ---- Work out the page slice ---------------------------------------------
+// Work out the page slice.
 $pointcount = max(1, count($points));
 $cellcount = count($users) * $pointcount;
 $perpage = max(1, (int) floor(MULTICHECKIN_MARKALL_CELLS / $pointcount));
@@ -123,7 +127,7 @@ $pages = $cellcount > MULTICHECKIN_MARKALL_CELLS
 $page = max(0, min($page, $pages - 1));
 $pageusers = $pages > 1 ? array_slice($users, $page * $perpage, $perpage) : $users;
 
-// ---- Handle a save -------------------------------------------------------
+// Handle a save.
 if ($action === 'save' && confirm_sesskey()) {
     $ticks = optional_param_array('m', [], PARAM_INT);
     $times = optional_param_array('t', [], PARAM_RAW_TRIMMED);
@@ -162,8 +166,14 @@ if ($action === 'save' && confirm_sesskey()) {
             $hadleave = leave_manager::record((int) $session->id, (int) $user->id) !== null;
 
             if ($wantsleave && !$hadleave) {
-                leave_manager::save($session, (int) $user->id, '',
-                    leave_manager::ORIGIN_TEACHER, null, (int) $USER->id);
+                leave_manager::save(
+                    $session,
+                    (int) $user->id,
+                    '',
+                    leave_manager::ORIGIN_TEACHER,
+                    null,
+                    (int) $USER->id
+                );
                 $leavegranted++;
             } else if (!$wantsleave && $hadleave) {
                 leave_manager::remove($session, (int) $user->id);
@@ -195,28 +205,38 @@ if ($action === 'save' && confirm_sesskey()) {
     if (count($times) < $expected) {
         // PHP dropped part of the request. Say so plainly: the teacher has to
         // know that what they see as saved may not have been received.
-        $message .= ' ' . get_string('marks_truncated', 'mod_multicheckin',
-            (object) ['got' => count($times), 'want' => $expected]);
+        $message .= ' ' . get_string(
+            'marks_truncated',
+            'mod_multicheckin',
+            (object) ['got' => count($times), 'want' => $expected]
+        );
         $type = \core\output\notification::NOTIFY_WARNING;
     } else if ($totals['errors']) {
-        $message .= ' ' . get_string('marks_some_rejected', 'mod_multicheckin',
-            count($totals['errors']));
+        $message .= ' ' . get_string(
+            'marks_some_rejected',
+            'mod_multicheckin',
+            count($totals['errors'])
+        );
         $type = \core\output\notification::NOTIFY_WARNING;
     }
 
     redirect($PAGE->url, $message, null, $type);
 }
 
-// ---- Fill in what is missing --------------------------------------------
+// Fill in what is missing.
 // The "the code never went up and everyone was here" case. Additive only: the
-// times of students who did check in are left exactly as they are.
+// Times of students who did check in are left exactly as they are.
 if ($action === 'fillmissing' && confirm_sesskey()) {
     $userids = array_map(fn($user) => (int) $user->id, $pageusers);
     $created = mark_manager::fill_missing($session, $points, $userids);
     mark_manager::resync($session);
 
-    redirect($PAGE->url, get_string('marks_filled', 'mod_multicheckin', $created), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $PAGE->url,
+        get_string('marks_filled', 'mod_multicheckin', $created),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -224,20 +244,30 @@ echo $OUTPUT->heading(get_string('marks_all_heading', 'mod_multicheckin'));
 
 if (count($sessions) > 1) {
     echo \mod_multicheckin\occurrence_helper::render_picker(
-        $cm->id, $sessions, (int) $session->id, 'markall.php');
+        $cm->id,
+        $sessions,
+        (int) $session->id,
+        'markall.php'
+    );
 }
 
 if (!$points) {
-    echo $OUTPUT->notification(get_string('nopoints', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_WARNING, false);
+    echo $OUTPUT->notification(
+        get_string('nopoints', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_WARNING,
+        false
+    );
     echo html_writer::div($OUTPUT->single_button($reporturl, get_string('back'), 'get'), 'mt-3');
     echo $OUTPUT->footer();
     exit;
 }
 
 if (!$users) {
-    echo $OUTPUT->notification(get_string('marks_nostudents', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('marks_nostudents', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
     echo html_writer::div($OUTPUT->single_button($reporturl, get_string('back'), 'get'), 'mt-3');
     echo $OUTPUT->footer();
     exit;
@@ -262,7 +292,8 @@ foreach ($points as $point) {
     $table->head[] = html_writer::div(format_string(point_name::display($point)))
         . html_writer::div(
             userdate($open, get_string('strftimetime')) . ' – ' . userdate($close, get_string('strftimetime')),
-            'text-muted small');
+            'text-muted small'
+        );
 }
 $table->head[] = get_string('leave', 'mod_multicheckin');
 $table->head[] = get_string('action', 'mod_multicheckin');
@@ -286,8 +317,13 @@ foreach ($pageusers as $user) {
         $state = mark_manager::state_from_logs($rowshere);
         $key = $point->id . '_' . $user->id;
 
-        $cell = html_writer::checkbox('m[' . $key . ']', 1, $state['checked'], '',
-            ['class' => 'form-check-input me-1']);
+        $cell = html_writer::checkbox(
+            'm[' . $key . ']',
+            1,
+            $state['checked'],
+            '',
+            ['class' => 'form-check-input me-1']
+        );
         $cell .= html_writer::empty_tag('input', [
             'type' => 'time',
             'name' => 't[' . $key . ']',
@@ -296,8 +332,10 @@ foreach ($pageusers as $user) {
             'style' => 'width: 6.5rem;',
         ]);
         if (mark_manager::state_is_manual($state)) {
-            $cell .= ' ' . html_writer::span(get_string('mark_manual', 'mod_multicheckin'),
-                'badge bg-info text-dark');
+            $cell .= ' ' . html_writer::span(
+                get_string('mark_manual', 'mod_multicheckin'),
+                'badge bg-info text-dark'
+            );
         }
 
         // The evidence behind the tick, one click away. Shown from the file
@@ -306,8 +344,10 @@ foreach ($pageusers as $user) {
         // happened, and clearing a tick does not unhappen it.
         $photo = $photos[(int) $user->id][(int) $point->id] ?? null;
         if ($photo) {
-            $cell .= ' ' . photo_manager::link($photo,
-                html_writer::tag('i', '', ['class' => 'fa fa-camera', 'aria-hidden' => 'true']));
+            $cell .= ' ' . photo_manager::link(
+                $photo,
+                html_writer::tag('i', '', ['class' => 'fa fa-camera', 'aria-hidden' => 'true'])
+            );
         }
 
         $row[] = $cell;
@@ -322,11 +362,18 @@ foreach ($pageusers as $user) {
         'name' => 'lvx[' . $user->id . ']',
         'value' => 1,
     ]);
-    $leavecell .= html_writer::checkbox('lv[' . $user->id . ']', 1, $leave !== null, '',
-        ['class' => 'form-check-input me-1']);
+    $leavecell .= html_writer::checkbox(
+        'lv[' . $user->id . ']',
+        1,
+        $leave !== null,
+        '',
+        ['class' => 'form-check-input me-1']
+    );
     if ($leave && empty($leave->reviewed)) {
-        $leavecell .= html_writer::span(get_string('leave_pending', 'mod_multicheckin'),
-            'badge bg-warning text-dark');
+        $leavecell .= html_writer::span(
+            get_string('leave_pending', 'mod_multicheckin'),
+            'badge bg-warning text-dark'
+        );
     }
     $row[] = $leavecell;
 
@@ -366,23 +413,28 @@ if ($pages > 1) {
             'perpage' => $perpage,
             'total' => count($users),
         ]) . ' ' . implode(' ', $links),
-        'mt-2 text-muted small');
+        'mt-2 text-muted small'
+    );
 }
 
-// ---- The options toolbar ----
+// The options toolbar.
 //
 // The same helper the report and the activity page use. Filling the blanks is
 // offered first because it is the action this page is usually opened for once
-// the class has finished, and reading the result is what a teacher does next.
+// The class has finished, and reading the result is what a teacher does next.
 $toolbar = new nav_toolbar();
 
 $fillurl = new moodle_url($PAGE->url, ['action' => 'fillmissing', 'sesskey' => sesskey()]);
-$toolbar->add_html(nav_toolbar::GROUP_TEACHER, html_writer::link($fillurl,
-    get_string('marks_fillmissing', 'mod_multicheckin'), [
+$toolbar->add_html(nav_toolbar::GROUP_TEACHER, html_writer::link(
+    $fillurl,
+    get_string('marks_fillmissing', 'mod_multicheckin'),
+    [
         'class' => 'btn btn-outline-secondary',
         'onclick' => 'return confirm(' . json_encode(
-            get_string('marks_fillmissing_confirm', 'mod_multicheckin', count($pageusers))) . ');',
-    ]));
+            get_string('marks_fillmissing_confirm', 'mod_multicheckin', count($pageusers))
+        ) . ');',
+    ]
+));
 
 $toolbar->add(nav_toolbar::GROUP_TEACHER, $reporturl, get_string('viewreport', 'mod_multicheckin'));
 

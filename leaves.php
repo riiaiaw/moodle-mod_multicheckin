@@ -34,6 +34,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -90,27 +91,35 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// ---- Actions -------------------------------------------------------------
+// Actions.
 // Cleared here, never granted: granting belongs on the marking sheet, beside
 // the records it overrides. The student and the session both travel in the
 // link, so a student with leaves in two sessions cannot have the wrong one
 // changed, and the session is re-resolved against this activity rather than
-// trusted as a bare id.
+// Trusted as a bare id.
 if ($action !== '' && $userid > 0 && $actsessionid > 0 && confirm_sesskey()) {
     $targetsession = session_manager::resolve_session($template, $actsessionid);
     if ($targetsession && (int) $targetsession->id === $actsessionid) {
         if ($action === 'review') {
             if (leave_manager::set_reviewed($targetsession, $userid, true, (int) $USER->id)) {
-                redirect($pageurl, get_string('leave_reviewed_ok', 'mod_multicheckin'), null,
-                    \core\output\notification::NOTIFY_SUCCESS);
+                redirect(
+                    $pageurl,
+                    get_string('leave_reviewed_ok', 'mod_multicheckin'),
+                    null,
+                    \core\output\notification::NOTIFY_SUCCESS
+                );
             }
         } else if ($action === 'clear') {
             if (leave_manager::remove($targetsession, $userid)) {
                 // The status falls back to whatever the logs say, so the
                 // gradebook has to be told; the logs were never touched.
                 mark_manager::resync($targetsession, $userid);
-                redirect($pageurl, get_string('leave_cleared', 'mod_multicheckin', 1), null,
-                    \core\output\notification::NOTIFY_SUCCESS);
+                redirect(
+                    $pageurl,
+                    get_string('leave_cleared', 'mod_multicheckin', 1),
+                    null,
+                    \core\output\notification::NOTIFY_SUCCESS
+                );
             }
         }
     }
@@ -122,16 +131,22 @@ if ($action === 'reviewall' && confirm_sesskey()) {
     $changed = 0;
     foreach (leave_manager::for_template((int) $template->id, true) as $row) {
         $targetsession = $DB->get_record('multicheckin', ['id' => (int) $row->sessionid]);
-        if ($targetsession
-                && leave_manager::set_reviewed($targetsession, (int) $row->userid, true, (int) $USER->id)) {
+        if (
+            $targetsession
+                && leave_manager::set_reviewed($targetsession, (int) $row->userid, true, (int) $USER->id)
+        ) {
             $changed++;
         }
     }
-    redirect($pageurl, get_string('leave_reviewed_ok', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $pageurl,
+        get_string('leave_reviewed_ok', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
-// ---- List ----------------------------------------------------------------
+// List.
 $leaves = leave_manager::for_template((int) $template->id, (bool) $pendingonly);
 $pendingtotal = count(leave_manager::for_template((int) $template->id, true));
 
@@ -144,8 +159,11 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('leaves_heading', 'mod_multicheckin', format_string($template->name)));
 
 if (!$leaves) {
-    echo $OUTPUT->notification(get_string('leave_none', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('leave_none', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
     echo html_writer::div($OUTPUT->single_button($viewurl, get_string('back'), 'get'), 'mt-3');
     echo $OUTPUT->footer();
     exit;
@@ -188,10 +206,19 @@ foreach ($leaves as $leave) {
 
     if ($where && leave_manager::has_attachment($where, (int) $leave->id)) {
         $file = leave_manager::attachment($where, (int) $leave->id);
-        $fileurl = moodle_url::make_pluginfile_url($context->id, leave_manager::COMPONENT,
-            leave_manager::FILEAREA, (int) $leave->id, $file->get_filepath(), $file->get_filename());
-        $filecell = html_writer::link($fileurl, get_string('leave_download', 'mod_multicheckin'),
-            ['class' => 'small']);
+        $fileurl = moodle_url::make_pluginfile_url(
+            $context->id,
+            leave_manager::COMPONENT,
+            leave_manager::FILEAREA,
+            (int) $leave->id,
+            $file->get_filepath(),
+            $file->get_filename()
+        );
+        $filecell = html_writer::link(
+            $fileurl,
+            get_string('leave_download', 'mod_multicheckin'),
+            ['class' => 'small']
+        );
     } else {
         $filecell = html_writer::span(get_string('leave_attachment_none', 'mod_multicheckin'), 'text-muted');
     }
@@ -211,8 +238,11 @@ foreach ($leaves as $leave) {
             'session' => (int) $leave->sessionid,
             'userid' => (int) $leave->userid,
         ]);
-        $actions[] = html_writer::link($editurl, get_string('marks_edit', 'mod_multicheckin'),
-            ['class' => 'small']);
+        $actions[] = html_writer::link(
+            $editurl,
+            get_string('marks_edit', 'mod_multicheckin'),
+            ['class' => 'small']
+        );
     }
     if (empty($leave->reviewed)) {
         $reviewurl = new moodle_url($pageurl, [
@@ -221,8 +251,11 @@ foreach ($leaves as $leave) {
             'action_session' => (int) $leave->sessionid,
             'sesskey' => sesskey(),
         ]);
-        $actions[] = html_writer::link($reviewurl, get_string('leave_markreviewed', 'mod_multicheckin'),
-            ['class' => 'small']);
+        $actions[] = html_writer::link(
+            $reviewurl,
+            get_string('leave_markreviewed', 'mod_multicheckin'),
+            ['class' => 'small']
+        );
     }
     $clearurl = new moodle_url($pageurl, [
         'action' => 'clear',
@@ -233,7 +266,8 @@ foreach ($leaves as $leave) {
     $actions[] = html_writer::link($clearurl, get_string('leave_clear_link', 'mod_multicheckin'), [
         'class' => 'small text-danger',
         'onclick' => 'return confirm(' . json_encode(
-            get_string('leave_clear_confirm', 'mod_multicheckin')) . ');',
+            get_string('leave_clear_confirm', 'mod_multicheckin')
+        ) . ');',
     ]);
 
     $table->data[] = [
@@ -254,11 +288,17 @@ echo html_writer::table($table);
 $foot = [];
 if ($pendingtotal > 0) {
     $reviewallurl = new moodle_url($pageurl, ['action' => 'reviewall', 'sesskey' => sesskey()]);
-    $foot[] = html_writer::link($reviewallurl, get_string('leave_reviewall', 'mod_multicheckin'),
-        ['class' => 'btn btn-outline-secondary btn-sm']);
+    $foot[] = html_writer::link(
+        $reviewallurl,
+        get_string('leave_reviewall', 'mod_multicheckin'),
+        ['class' => 'btn btn-outline-secondary btn-sm']
+    );
 }
-$foot[] = html_writer::link($markallurl, get_string('markall_link', 'mod_multicheckin'),
-    ['class' => 'btn btn-outline-secondary btn-sm']);
+$foot[] = html_writer::link(
+    $markallurl,
+    get_string('markall_link', 'mod_multicheckin'),
+    ['class' => 'btn btn-outline-secondary btn-sm']
+);
 $foot[] = html_writer::link($viewurl, get_string('back'), ['class' => 'btn btn-link btn-sm']);
 echo html_writer::div(implode(' ', $foot), 'mt-3');
 

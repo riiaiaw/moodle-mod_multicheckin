@@ -36,7 +36,6 @@ use mod_multicheckin\leave_manager;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class leave_form extends \moodleform {
-
     /**
      * Definition.
      *
@@ -54,8 +53,12 @@ class leave_form extends \moodleform {
         $mform->addElement('hidden', 'session', $session->id);
         $mform->setType('session', PARAM_INT);
 
-        $mform->addElement('textarea', 'reason', get_string('leave_reason', 'mod_multicheckin'),
-            ['rows' => 3, 'cols' => 50]);
+        $mform->addElement(
+            'textarea',
+            'reason',
+            get_string('leave_reason', 'mod_multicheckin'),
+            ['rows' => 3, 'cols' => 50]
+        );
         $mform->setType('reason', PARAM_TEXT);
         $mform->addHelpButton('reason', 'leave_reason', 'mod_multicheckin');
         $mform->setDefault('reason', $leave ? (string) $leave->reason : '');
@@ -65,11 +68,22 @@ class leave_form extends \moodleform {
         // second visit and saving would wipe the file the student attached.
         $draftitemid = file_get_submitted_draft_itemid('leavefile');
         $options = leave_manager::file_options();
-        file_prepare_draft_area($draftitemid, $context->id, leave_manager::COMPONENT,
-            leave_manager::FILEAREA, $leave ? (int) $leave->id : null, $options);
+        file_prepare_draft_area(
+            $draftitemid,
+            $context->id,
+            leave_manager::COMPONENT,
+            leave_manager::FILEAREA,
+            $leave ? (int) $leave->id : null,
+            $options
+        );
 
-        $mform->addElement('filepicker', 'leavefile',
-            get_string('leave_attachment', 'mod_multicheckin'), null, $options);
+        $mform->addElement(
+            'filepicker',
+            'leavefile',
+            get_string('leave_attachment', 'mod_multicheckin'),
+            null,
+            $options
+        );
         $mform->setType('leavefile', PARAM_INT);
         $mform->addHelpButton('leavefile', 'leave_attachment', 'mod_multicheckin');
         $mform->setDefault('leavefile', $draftitemid);

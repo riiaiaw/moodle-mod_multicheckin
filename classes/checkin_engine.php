@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Core status computation engine.
  *
@@ -30,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class checkin_engine {
-
     /** @var string Status code: present. */
     public const STATUS_PRESENT = 'P';
     /** @var string Status code: late. */
@@ -78,8 +75,12 @@ class checkin_engine {
         // the same code compute_user() reaches.
         $leaves = leave_manager::for_session($sessionid);
         $logs = [];
-        $alllogs = $DB->get_records('multicheckin_log', ['sessionid' => $sessionid], '',
-            'id, userid, pointid, timecreated');
+        $alllogs = $DB->get_records(
+            'multicheckin_log',
+            ['sessionid' => $sessionid],
+            '',
+            'id, userid, pointid, timecreated'
+        );
         foreach ($alllogs as $log) {
             $logs[(int) $log->userid][(int) $log->id] = $log;
         }
@@ -87,8 +88,13 @@ class checkin_engine {
         $count = 0;
         foreach ($users as $user) {
             $userid = (int) $user->id;
-            $result = self::compute_user_with($session, $points, $userid,
-                $logs[$userid] ?? [], $leaves[$userid] ?? null);
+            $result = self::compute_user_with(
+                $session,
+                $points,
+                $userid,
+                $logs[$userid] ?? [],
+                $leaves[$userid] ?? null
+            );
             self::save_result($sessionid, $userid, $result);
             $count++;
         }
@@ -166,8 +172,13 @@ class checkin_engine {
      * @param \stdClass|null $leave This user's leave record, or null.
      * @return array Result array with keys: statuscode, firstcheckin, lastcheckin, latemin, earlymin, points.
      */
-    public static function compute_user_with(\stdClass $session, array $points, int $userid,
-            array $logs, ?\stdClass $leave = null): array {
+    public static function compute_user_with(
+        \stdClass $session,
+        array $points,
+        int $userid,
+        array $logs,
+        ?\stdClass $leave = null
+    ): array {
 
         // A leave outranks everything below. It is a session-level declaration
         // rather than an event against a point, so there is nothing in the logs
@@ -255,7 +266,7 @@ class checkin_engine {
         $islate = false;
         $isearly = false;
 
-        // ---- Late check: was the FIRST (sign-in) point hit after T0 + lategrace? ----
+        // Late check: was the FIRST (sign-in) point hit after T0 + lategrace?
         $firstpointlogs = array_filter($logs, fn($l) => (int) $l->pointid === (int) $firstpoint->id);
         if ($firstpointlogs) {
             $arrival = min(array_map(fn($l) => (int) $l->timecreated, $firstpointlogs));
@@ -271,23 +282,22 @@ class checkin_engine {
             $latemin = (int) floor(max(0, $te - $t0) / 60);
         }
 
-        // ---- Early-leave check ----
+        // Early-leave check.
         // Two configurable modes:
-        //   window    : the last (sign-out) point has NO record inside its own open window.
-        //   threshold : the last recorded departure is earlier than timeend - earlygrace.
+        // window    : the last (sign-out) point has NO record inside its own open window.
+        // threshold : the last recorded departure is earlier than timeend - earlygrace.
         //
         // Skipped entirely when the activity does not require a sign-out: with
         // no end-of-class check-in a successful sign-in is the whole record, so
-        // the status stays present or late and no early-leave penalty applies.
+        // The status stays present or late and no early-leave penalty applies.
         $earlymode = isset($session->earlymode) ? $session->earlymode : self::EARLYMODE_WINDOW;
         $lastpointlogs = array_filter($logs, fn($l) => (int) $l->pointid === (int) $lastpoint->id);
 
-        if (!$requiresignout) {
-            // No sign-out requirement: deliberately leave $isearly false, which
-            // the initialiser above already did. Nothing to measure.
-        } else if ($earlymode === self::EARLYMODE_WINDOW) {
+        // Without a sign-out requirement there is nothing to measure: $isearly
+        // stays false, which the initialiser above already set.
+        if ($requiresignout && $earlymode === self::EARLYMODE_WINDOW) {
             // Judge by whether the sign-out window was satisfied.
-            $windowopen = $t0 + (int) $lastpoint->openoffset;   // no +0 clamp: keep author intent
+            $windowopen = $t0 + (int) $lastpoint->openoffset;   // No +0 clamp: keep author intent.
             if (!$lastpointlogs) {
                 if (!empty($lastpoint->required)) {
                     $isearly = true;
@@ -297,7 +307,7 @@ class checkin_engine {
                 }
             }
             // A record inside the window satisfies attendance; no early-leave penalty.
-        } else {
+        } else if ($requiresignout) {
             // Threshold mode: compare departure against timeend - earlygrace.
             $earlythreshold = $te - (int) $session->earlygrace;
             if ($lastpointlogs) {
@@ -313,7 +323,7 @@ class checkin_engine {
             }
         }
 
-        // ---- Combine the two dimensions into a single status code ----
+        // Combine the two dimensions into a single status code.
         // Priority: absent > late+early > early > late > present.
         if ($islate && $isearly) {
             $status = self::STATUS_LATE_EARLY;
@@ -441,8 +451,11 @@ class checkin_engine {
      */
     public static function total_possible_points(int $sessionid): float {
         global $DB;
-        $session = $DB->get_record('multicheckin', ['id' => $sessionid],
-            'pointspresent, pointslate, pointsearly, pointslateearly, pointsabsent, pointsleave');
+        $session = $DB->get_record(
+            'multicheckin',
+            ['id' => $sessionid],
+            'pointspresent, pointslate, pointsearly, pointslateearly, pointsabsent, pointsleave'
+        );
         if (!$session) {
             return 0.0;
         }

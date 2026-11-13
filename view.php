@@ -27,6 +27,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -85,6 +86,22 @@ $PAGE->set_title(format_string($template->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
+// Log the view, then tell completion about it. lib.php advertises
+// FEATURE_COMPLETION_TRACKS_VIEWS, and a course that completes on "view" only
+// works if both happen: the flag alone changes nothing, which is why the rule
+// never came true before. The template is the activity row the grade and the
+// completion record hang off, so it is the object id.
+$event = \mod_multicheckin\event\course_module_viewed::create([
+    'objectid' => $template->id,
+    'context' => $context,
+]);
+$event->add_record_snapshot('course', $course);
+$event->add_record_snapshot('multicheckin', $template);
+$event->trigger();
+
+$completion = new \completion_info($course);
+$completion->set_module_viewed($cm);
+
 // All check-ins go through checkin.php so that password / QR / self rules are
 // enforced in exactly one place. This page is read-only.
 
@@ -100,7 +117,11 @@ if ($template->intro) {
 // to switch between when there is not.
 if (count($sessions) > 1) {
     echo \mod_multicheckin\occurrence_helper::render_picker(
-        $cm->id, $sessions, (int) $session->id, 'view.php');
+        $cm->id,
+        $sessions,
+        (int) $session->id,
+        'view.php'
+    );
     echo \mod_multicheckin\occurrence_helper::render_current_note($session);
 }
 
@@ -200,15 +221,21 @@ foreach ($points as $p) {
             if ($needsgps) {
                 // Handled by the GPS-aware JS button below.
                 $selfcheckinurls[(int) $p->id] = $url->out(false);
-                $action = html_writer::tag('button', $checkinlabel,
+                $action = html_writer::tag(
+                    'button',
+                    $checkinlabel,
                     [
                         'type' => 'button',
                         'class' => 'btn btn-primary btn-sm multicheckin-geocheckin',
                         'data-target' => (int) $p->id,
-                    ]);
+                    ]
+                );
             } else {
-                $action = html_writer::link($url, $checkinlabel,
-                    ['class' => 'btn btn-primary btn-sm']);
+                $action = html_writer::link(
+                    $url,
+                    $checkinlabel,
+                    ['class' => 'btn btn-primary btn-sm']
+                );
             }
         } else if (!empty($p->qrcode)) {
             $action = get_string('scan_qr_hint', 'mod_multicheckin');
@@ -252,8 +279,10 @@ foreach ($points as $p) {
         // forgotten: the badge names the point that will not take a button.
         format_string(point_name::display($p))
             . ($isqronly && has_capability('mod/multicheckin:manage', $context)
-                ? ' ' . html_writer::span(get_string('qronly_badge', 'mod_multicheckin'),
-                    'badge bg-info text-dark')
+                ? ' ' . html_writer::span(
+                    get_string('qronly_badge', 'mod_multicheckin'),
+                    'badge bg-info text-dark'
+                )
                 : ''),
         userdate($open, get_string('strftimetime')) . ' – ' . userdate($close, get_string('strftimetime')),
         $p->required ? get_string('yes') : get_string('no'),
@@ -271,8 +300,11 @@ echo html_writer::table($ptable);
 // page in BEFORE they scan, because the mistake is not correctable from inside
 // the app - WeChat offers no way out to a real browser from a page.
 if ($photostudent) {
-    echo $OUTPUT->notification(get_string('photo_required_notice', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('photo_required_notice', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
 }
 
 // The leave entry point. It sits AFTER the check-in table rather than in it:
@@ -297,20 +329,25 @@ if ($canrequestleave) {
     if ($myleave) {
         echo html_writer::div(
             html_writer::span(get_string('status_leave', 'mod_multicheckin'), 'badge bg-secondary'),
-            'mt-2');
+            'mt-2'
+        );
     }
 
     // Said here rather than on the leave page, which the student has already
     // found: the scan route is the one door a leave deliberately does not have.
-    echo html_writer::div(get_string('leave_scan_hint', 'mod_multicheckin'),
-        'text-muted small mt-1');
+    echo html_writer::div(
+        get_string('leave_scan_hint', 'mod_multicheckin'),
+        'text-muted small mt-1'
+    );
 }
 
 // Explain the fence to students so a rejection is not a mystery.
 if ($isgeofenced) {
     echo $OUTPUT->notification(
         get_string('geofence_notice_' . ($needsgps ? 'gps' : 'ip'), 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_WARNING, false);
+        \core\output\notification::NOTIFY_WARNING,
+        false
+    );
 }
 
 // GPS-aware self check-in: acquire a position, then forward it to checkin.php.
@@ -356,7 +393,7 @@ if ($needsgps && $selfcheckinurls) {
 ", ['type' => 'text/javascript']);
 }
 
-// ---- The options toolbar ----
+// The options toolbar.
 //
 // Two groups, one card. The selected occurrence travels with every link, so the
 // manage and report pages open on the session the teacher was just looking at
@@ -364,32 +401,45 @@ if ($needsgps && $selfcheckinurls) {
 //
 // Entries are added, not printed: a page contributes only what it can actually
 // offer, the helper renders the rest, and a group nobody filled in draws
-// nothing at all rather than an empty box.
+// Nothing at all rather than an empty box.
 $toolbar = new nav_toolbar();
 
 // What the student can do for themselves. The leave button used to sit under
 // the table with the check-in buttons; it is an option of the page like any
 // other, so it belongs with them.
 if ($canrequestleave) {
-    $toolbar->add(nav_toolbar::GROUP_STUDENT, $leavesurl,
+    $toolbar->add(
+        nav_toolbar::GROUP_STUDENT,
+        $leavesurl,
         get_string('leave_request', 'mod_multicheckin'),
-        $myleave ? ['badge' => get_string('status_leave', 'mod_multicheckin')] : []);
+        $myleave ? ['badge' => get_string('status_leave', 'mod_multicheckin')] : []
+    );
 }
 
 if (has_capability('mod/multicheckin:manage', $context)) {
-    $manageurl = new moodle_url('/mod/multicheckin/manage.php',
-        ['id' => $cm->id, 'session' => $session->id]);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $manageurl,
-        get_string('managepoints', 'mod_multicheckin'));
+    $manageurl = new moodle_url(
+        '/mod/multicheckin/manage.php',
+        ['id' => $cm->id, 'session' => $session->id]
+    );
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $manageurl,
+        get_string('managepoints', 'mod_multicheckin')
+    );
 
     // Retitling or retiming the occurrence shown. Offered here as well as on
     // the series page because this is the page a teacher reaches from the
     // course, and being sent to a table of thirty rows to fix one title is a
     // detour for no reason.
-    $editurl = new moodle_url('/mod/multicheckin/session_edit.php',
-        ['id' => $cm->id, 'session' => $session->id, 'return' => 'view']);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $editurl,
-        get_string('session_edit_link', 'mod_multicheckin'));
+    $editurl = new moodle_url(
+        '/mod/multicheckin/session_edit.php',
+        ['id' => $cm->id, 'session' => $session->id, 'return' => 'view']
+    );
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $editurl,
+        get_string('session_edit_link', 'mod_multicheckin')
+    );
 
     // The codes on demand. The inline panel above only paints while a point is
     // open, so before the class starts there is nothing on the page to project;
@@ -400,10 +450,16 @@ if (has_capability('mod/multicheckin:manage', $context)) {
 
     // Marking is the action this page exists for, so it is the one primary
     // button in the group.
-    $markallurl = new moodle_url('/mod/multicheckin/markall.php',
-        ['id' => $cm->id, 'session' => $session->id]);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $markallurl,
-        get_string('markall_link', 'mod_multicheckin'), ['primary' => true]);
+    $markallurl = new moodle_url(
+        '/mod/multicheckin/markall.php',
+        ['id' => $cm->id, 'session' => $session->id]
+    );
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $markallurl,
+        get_string('markall_link', 'mod_multicheckin'),
+        ['primary' => true]
+    );
 
     // By-hand verification requests. Counted over the whole activity rather
     // than the occurrence shown: a request raised in week 3 is still waiting in
@@ -411,38 +467,56 @@ if (has_capability('mod/multicheckin:manage', $context)) {
     // ones that have been forgotten.
     $pendingphotos = photo_manager::pending_count((int) $template->id);
     $photorequrl = new moodle_url('/mod/multicheckin/photorequests.php', ['id' => $cm->id]);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $photorequrl,
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $photorequrl,
         get_string('photoreq_manage', 'mod_multicheckin'),
-        $pendingphotos > 0 ? ['badge' => (string) $pendingphotos] : []);
+        $pendingphotos > 0 ? ['badge' => (string) $pendingphotos] : []
+    );
 
     // Leave requests. The count rides on the link itself: a teacher who has to
     // open the page to find out there is nothing waiting will stop opening it.
     $pendingleaves = leave_manager::pending_count((int) $session->id);
-    $leavesmanageurl = new moodle_url('/mod/multicheckin/leaves.php',
-        ['id' => $cm->id, 'session' => $session->id]);
-    $toolbar->add(nav_toolbar::GROUP_TEACHER, $leavesmanageurl,
+    $leavesmanageurl = new moodle_url(
+        '/mod/multicheckin/leaves.php',
+        ['id' => $cm->id, 'session' => $session->id]
+    );
+    $toolbar->add(
+        nav_toolbar::GROUP_TEACHER,
+        $leavesmanageurl,
         get_string('leaves', 'mod_multicheckin'),
-        $pendingleaves > 0 ? ['badge' => (string) $pendingleaves] : []);
+        $pendingleaves > 0 ? ['badge' => (string) $pendingleaves] : []
+    );
 
     // Off unless the teacher asked for it: the audit page is a diagnostic and
     // has no place in the everyday flow of taking attendance.
     if (!empty($session->showgeoaudit)) {
-        $auditurl = new moodle_url('/mod/multicheckin/geolog.php',
-            ['id' => $cm->id, 'session' => $session->id]);
-        $toolbar->add(nav_toolbar::GROUP_TEACHER, $auditurl,
-            get_string('audit_link', 'mod_multicheckin'));
+        $auditurl = new moodle_url(
+            '/mod/multicheckin/geolog.php',
+            ['id' => $cm->id, 'session' => $session->id]
+        );
+        $toolbar->add(
+            nav_toolbar::GROUP_TEACHER,
+            $auditurl,
+            get_string('audit_link', 'mod_multicheckin')
+        );
     }
 }
 
 if (has_capability('mod/multicheckin:viewreports', $context)) {
-    $reporturl = new moodle_url('/mod/multicheckin/report.php',
-        ['id' => $cm->id, 'session' => $session->id]);
+    $reporturl = new moodle_url(
+        '/mod/multicheckin/report.php',
+        ['id' => $cm->id, 'session' => $session->id]
+    );
     $toolbar->add(nav_toolbar::GROUP_TEACHER, $reporturl, get_string('viewreport', 'mod_multicheckin'));
 
     if (count($sessions) > 1) {
         $seriesurl = new moodle_url('/mod/multicheckin/series.php', ['id' => $cm->id]);
-        $toolbar->add(nav_toolbar::GROUP_TEACHER, $seriesurl,
-            get_string('occurrence_manageall', 'mod_multicheckin'));
+        $toolbar->add(
+            nav_toolbar::GROUP_TEACHER,
+            $seriesurl,
+            get_string('occurrence_manageall', 'mod_multicheckin')
+        );
     }
 }
 

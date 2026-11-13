@@ -36,7 +36,6 @@ use mod_multicheckin\session_manager;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mark_form extends \moodleform {
-
     /**
      * Definition.
      *
@@ -73,32 +72,53 @@ class mark_form extends \moodleform {
                 // student's own device. The sheet and the report already say
                 // so; leaving it off here is what makes an old correction look
                 // like the student's own record.
-                $mform->addElement('static', $key . '_manual', '',
-                    \html_writer::span(get_string('mark_manual', 'mod_multicheckin'),
-                        'badge bg-info text-dark'));
+                $mform->addElement(
+                    'static',
+                    $key . '_manual',
+                    '',
+                    \html_writer::span(
+                        get_string('mark_manual', 'mod_multicheckin'),
+                        'badge bg-info text-dark'
+                    )
+                );
             }
 
-            $mform->addElement('advcheckbox', $key . '_on',
-                get_string('mark_checked', 'mod_multicheckin'));
+            $mform->addElement(
+                'advcheckbox',
+                $key . '_on',
+                get_string('mark_checked', 'mod_multicheckin')
+            );
             $mform->setDefault($key . '_on', $state['checked'] ? 1 : 0);
 
-            $mform->addElement('text', $key . '_time',
+            $mform->addElement(
+                'text',
+                $key . '_time',
                 get_string('mark_time', 'mod_multicheckin'),
-                ['size' => 6, 'placeholder' => 'HH:MM']);
+                ['size' => 6, 'placeholder' => 'HH:MM']
+            );
             $mform->setType($key . '_time', PARAM_RAW_TRIMMED);
-            $mform->setDefault($key . '_time',
-                $state['checked'] ? $state['clock'] : mark_manager::default_clock($session, $point));
+            $mform->setDefault(
+                $key . '_time',
+                $state['checked'] ? $state['clock'] : mark_manager::default_clock($session, $point)
+            );
 
-            $mform->addElement('static', $key . '_window', '',
-                $this->window_text($session, $point));
+            $mform->addElement(
+                'static',
+                $key . '_window',
+                '',
+                $this->window_text($session, $point)
+            );
         }
 
         // A leave is one decision for the whole session, so it sits on its own
         // rather than beside a point: ticking it overrides every row above
         // without deleting any of them.
         $mform->addElement('header', 'leaveheader', get_string('leave', 'mod_multicheckin'));
-        $mform->addElement('advcheckbox', 'leave',
-            get_string('leave_grant', 'mod_multicheckin'));
+        $mform->addElement(
+            'advcheckbox',
+            'leave',
+            get_string('leave_grant', 'mod_multicheckin')
+        );
         $mform->setDefault('leave', !empty($this->_customdata['leave']) ? 1 : 0);
         $mform->addHelpButton('leave', 'leave_grant', 'mod_multicheckin');
 
@@ -120,7 +140,8 @@ class mark_form extends \moodleform {
                 'open' => userdate($open, get_string('strftimetime')),
                 'close' => userdate($close, get_string('strftimetime')),
             ]),
-            'text-muted small');
+            'text-muted small'
+        );
     }
 
     /**

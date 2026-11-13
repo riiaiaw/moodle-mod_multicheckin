@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Geofence enforcement for self-service check-in.
  *
@@ -38,7 +36,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class geo_manager {
-
     /** @var string No geofence: any authenticated student may self check-in. */
     public const MODE_NONE = 'none';
 
@@ -79,8 +76,14 @@ class geo_manager {
      * @param bool $audit Whether to write a row into multicheckin_geo_log.
      * @return array{allowed: bool, reason: string}
      */
-    public static function evaluate(\stdClass $session, \stdClass $point, int $userid,
-            string $method = 'self', ?array $clientgeo = null, bool $audit = true): array {
+    public static function evaluate(
+        \stdClass $session,
+        \stdClass $point,
+        int $userid,
+        string $method = 'self',
+        ?array $clientgeo = null,
+        bool $audit = true
+    ): array {
         $mode = self::effective_mode($session, $method);
 
         if ($mode === self::MODE_NONE) {
@@ -97,7 +100,7 @@ class geo_manager {
         $gpsok = null;
         $reason = 'ok';
 
-        // ---- IP / CIDR evaluation ----
+        // IP / CIDR evaluation.
         if ($mode === self::MODE_IP || $mode === self::MODE_BOTH) {
             $ranges = self::parse_ranges($session->geoipranges ?? '');
             if (!$ranges) {
@@ -111,7 +114,7 @@ class geo_manager {
             }
         }
 
-        // ---- GPS radius evaluation ----
+        // GPS radius evaluation.
         if ($mode === self::MODE_GPS || $mode === self::MODE_BOTH) {
             $clat = (float) ($session->geolat ?? 0);
             $clng = (float) ($session->geolng ?? 0);
@@ -137,7 +140,7 @@ class geo_manager {
             }
         }
 
-        // ---- Combine: in "both" mode every evaluated signal must pass ----
+        // Combine: in "both" mode every evaluated signal must pass.
         $allowed = true;
         if ($mode === self::MODE_BOTH) {
             $allowed = ($ipok !== false) && ($gpsok !== false);
@@ -152,8 +155,20 @@ class geo_manager {
         }
 
         if ($audit) {
-            self::log_attempt($session, $point, $userid, $method, $mode,
-                $allowed, $reason, $ip, $lat, $lng, $acc, $distance);
+            self::log_attempt(
+                $session,
+                $point,
+                $userid,
+                $method,
+                $mode,
+                $allowed,
+                $reason,
+                $ip,
+                $lat,
+                $lng,
+                $acc,
+                $distance
+            );
         }
 
         return ['allowed' => $allowed, 'reason' => $reason];
@@ -252,7 +267,7 @@ class geo_manager {
 
         $mapped = self::mapped_as_ipv4($packed);
         if ($mapped !== null && ($prefix === null || $prefix >= 96)) {
-            // ::ffff:a.b.c.d names an IPv4 address, and /96 or longer names it
+            // An address written ::ffff:a.b.c.d names an IPv4 address, and /96 or longer names it
             // plus some of its own bits: rebase onto the four bytes it means.
             $packed = $mapped;
             $prefix = $prefix === null ? 32 : $prefix - 96;
@@ -282,7 +297,7 @@ class geo_manager {
         if ($ip === '') {
             return null;
         }
-        // inet_pton() warns on garbage; the warning is not the answer.
+        // Inet_pton() warns on garbage; the warning is not the answer.
         $packed = @inet_pton($ip);
         if ($packed === false) {
             return null;
@@ -416,9 +431,20 @@ class geo_manager {
      * @param float|null $distance Computed distance.
      * @return void
      */
-    protected static function log_attempt(\stdClass $session, \stdClass $point, int $userid,
-            string $method, string $mode, bool $allowed, string $reason, string $ip,
-            ?float $lat, ?float $lng, ?float $acc, ?float $distance): void {
+    protected static function log_attempt(
+        \stdClass $session,
+        \stdClass $point,
+        int $userid,
+        string $method,
+        string $mode,
+        bool $allowed,
+        string $reason,
+        string $ip,
+        ?float $lat,
+        ?float $lng,
+        ?float $acc,
+        ?float $distance
+    ): void {
         global $DB;
 
         $row = (object) [

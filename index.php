@@ -27,6 +27,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -51,8 +52,10 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('modulenameplural', 'mod_multicheckin'));
 
 if (!$instances) {
-    notice(get_string('thereareno', 'moodle', get_string('modulenameplural', 'mod_multicheckin')),
-        new moodle_url('/course/view.php', ['id' => $id]));
+    notice(
+        get_string('thereareno', 'moodle', get_string('modulenameplural', 'mod_multicheckin')),
+        new moodle_url('/course/view.php', ['id' => $id])
+    );
     echo $OUTPUT->footer();
     exit;
 }

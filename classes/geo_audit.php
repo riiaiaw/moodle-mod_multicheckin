@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Reading side of the geofence audit trail.
  *
@@ -39,7 +37,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class geo_audit {
-
     /** @var int Rows per page of the audit table. */
     public const PAGE_SIZE = 50;
 
@@ -126,7 +123,9 @@ class geo_audit {
         [$where, $params] = self::conditions($sessionid, $options);
 
         $total = (int) $DB->count_records_sql(
-            "SELECT COUNT(g.id) FROM {multicheckin_geo_log} g WHERE $where", $params);
+            "SELECT COUNT(g.id) FROM {multicheckin_geo_log} g WHERE $where",
+            $params
+        );
 
         $page = max(0, (int) ($options['page'] ?? 0));
         $pages = max(1, (int) ceil($total / self::PAGE_SIZE));
@@ -141,7 +140,10 @@ class geo_audit {
                JOIN {multicheckin_point} mp ON mp.id = g.pointid
               WHERE $where
            ORDER BY g.timecreated DESC, g.id DESC",
-            $params, $page * self::PAGE_SIZE, self::PAGE_SIZE);
+            $params,
+            $page * self::PAGE_SIZE,
+            self::PAGE_SIZE
+        );
 
         return ['rows' => $rows, 'total' => $total, 'page' => $page, 'pages' => $pages];
     }
@@ -162,7 +164,9 @@ class geo_audit {
             "SELECT g.reason AS reason, g.allowed AS allowed, COUNT(g.id) AS num
                FROM {multicheckin_geo_log} g
               WHERE $where
-           GROUP BY g.reason, g.allowed", $params);
+           GROUP BY g.reason, g.allowed",
+            $params
+        );
 
         $out = ['total' => 0, 'allowed' => 0, 'rejected' => 0, 'reasons' => []];
         foreach ($rows as $row) {
@@ -200,7 +204,10 @@ class geo_audit {
                FROM {multicheckin_geo_log} g
               WHERE g.sessionid = :sessionid AND g.distance IS NOT NULL
            ORDER BY g.timecreated DESC",
-            ['sessionid' => $sessionid], 0, $cap);
+            ['sessionid' => $sessionid],
+            0,
+            $cap
+        );
 
         $values = array_map('floatval', $values);
         if (!$values) {

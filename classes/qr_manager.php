@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Handles QR tokens for check-in points.
  *
@@ -38,7 +36,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qr_manager {
-
     /** @var int Default QR token rotation period in seconds. */
     public const ROTATION = 15;
 
@@ -236,8 +233,13 @@ class qr_manager {
      * @param \stdClass|null $session Session record (for the rotation period).
      * @return bool
      */
-    public static function validate(\stdClass $point, int $slot, string $token,
-            ?int $now = null, ?\stdClass $session = null): bool {
+    public static function validate(
+        \stdClass $point,
+        int $slot,
+        string $token,
+        ?int $now = null,
+        ?\stdClass $session = null
+    ): bool {
         $now = $now ?? time();
         $rotation = self::rotation_for($session);
         $current = self::current_slot($now, $rotation);
@@ -300,8 +302,10 @@ class qr_manager {
             $blocks .= \html_writer::div(
                 \html_writer::tag('h5', \format_string(point_name::display($p)))
                 . self::qr_image($cmid, $session, $p)
-                . \html_writer::div(get_string('qr_rotate_hint', 'mod_multicheckin', $rotation),
-                    'text-muted small'),
+                . \html_writer::div(
+                    get_string('qr_rotate_hint', 'mod_multicheckin', $rotation),
+                    'text-muted small'
+                ),
                 'd-inline-block m-3'
             );
         }
@@ -387,8 +391,12 @@ class qr_manager {
      * @param int|null $now Current time, for tests.
      * @return string HTML.
      */
-    public static function qr_window_panel(int $cmid, \stdClass $session, array $points,
-            ?int $now = null): string {
+    public static function qr_window_panel(
+        int $cmid,
+        \stdClass $session,
+        array $points,
+        ?int $now = null
+    ): string {
         $now = $now ?? time();
         $rotation = self::rotation_for($session);
 
@@ -397,19 +405,24 @@ class qr_manager {
             get_string('timestart', 'mod_multicheckin') . ': ' . \userdate($session->timestart)
             . ' &nbsp;|&nbsp; '
             . get_string('timeend', 'mod_multicheckin') . ': ' . \userdate($session->timeend),
-            'text-center text-muted small mb-2');
+            'text-center text-muted small mb-2'
+        );
 
         // The occurrence's own note, so the window still says which class this
         // is once it is on a screen of its own.
         $description = trim((string) ($session->description ?? ''));
         if ($description !== '') {
-            $html .= \html_writer::div(\nl2br(\s($description)),
-                'text-center multicheckin-session-description mb-3');
+            $html .= \html_writer::div(
+                \nl2br(\s($description)),
+                'text-center multicheckin-session-description mb-3'
+            );
         }
 
         if (!$points) {
             return $html . \html_writer::div(
-                get_string('qrwindow_nopoints', 'mod_multicheckin'), 'alert alert-info');
+                get_string('qrwindow_nopoints', 'mod_multicheckin'),
+                'alert alert-info'
+            );
         }
 
         $anyopen = false;
@@ -427,11 +440,13 @@ class qr_manager {
                 $isopen
                     ? \html_writer::span(get_string('open', 'mod_multicheckin'), 'badge bg-success')
                     : \html_writer::span(get_string('closed', 'mod_multicheckin'), 'badge bg-secondary'),
-                'my-1');
+                'my-1'
+            );
             $box .= \html_writer::div(
                 \userdate($open, get_string('strftimetime')) . ' – '
                 . \userdate($close, get_string('strftimetime')),
-                'text-muted small');
+                'text-muted small'
+            );
             // The flag governs whether the code is offered on the page; the
             // scan itself does not test it. Said out loud rather than left as
             // a silent difference between what the setting promises and what
@@ -443,7 +458,8 @@ class qr_manager {
                     self::only_scan($session, $p)
                         ? get_string('qronly_force_show', 'mod_multicheckin')
                         : get_string('qrwindow_point_notenabled', 'mod_multicheckin'),
-                    'text-muted small');
+                    'text-muted small'
+                );
             }
 
             $blocks .= \html_writer::div($box, 'd-inline-block m-3 align-top');
@@ -451,13 +467,16 @@ class qr_manager {
 
         $html .= \html_writer::div($blocks, 'text-center multicheckin-qrpanel mb-3');
 
-        $html .= \html_writer::div(get_string('qrwindow_hint', 'mod_multicheckin'),
-            'text-muted small text-center');
+        $html .= \html_writer::div(
+            get_string('qrwindow_hint', 'mod_multicheckin'),
+            'text-muted small text-center'
+        );
 
         if (!$anyopen) {
             $html = \html_writer::div(
                 get_string('qrwindow_closed_notice', 'mod_multicheckin', $rotation),
-                'alert alert-warning') . $html;
+                'alert alert-warning'
+            ) . $html;
         }
 
         return $html . self::refresh_script();

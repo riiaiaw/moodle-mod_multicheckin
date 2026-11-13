@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The row above a report table: the export button, and what the numbers add up to.
  *
@@ -51,7 +49,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class report_bar {
-
     /**
      * The six statuses, in the order a teacher reads them: who was here, who
      * was here but late, and then the reasons they were not here.
@@ -119,8 +116,12 @@ class report_bar {
      * @param int $shown How many rows the table is about to draw, or -1 when unfiltered.
      * @return string HTML.
      */
-    public static function summary(array $summary, ?\moodle_url $baseurl = null,
-            string $selected = '', int $shown = -1): string {
+    public static function summary(
+        array $summary,
+        ?\moodle_url $baseurl = null,
+        string $selected = '',
+        int $shown = -1
+    ): string {
         $labels = [
             checkin_engine::STATUS_PRESENT => get_string('status_present', 'mod_multicheckin'),
             checkin_engine::STATUS_LATE => get_string('status_late', 'mod_multicheckin'),
@@ -136,14 +137,19 @@ class report_bar {
         // reads "showing 42 of 42" is a line the reader learns to skip.
         if ($shown >= 0 && $shown !== (int) $summary['total']) {
             $out .= \html_writer::span(
-                get_string('report_showing', 'mod_multicheckin',
-                    (object) ['shown' => $shown, 'total' => $summary['total']]),
-                'text-muted small me-2');
+                get_string(
+                    'report_showing',
+                    'mod_multicheckin',
+                    (object) ['shown' => $shown, 'total' => $summary['total']]
+                ),
+                'text-muted small me-2'
+            );
         }
 
         $out .= \html_writer::span(
             get_string('report_expectedcount', 'mod_multicheckin', $summary['total']),
-            'fw-bold me-2');
+            'fw-bold me-2'
+        );
 
         foreach (self::codes() as $code) {
             $count = (int) ($summary['counts'][$code] ?? 0);
@@ -156,13 +162,14 @@ class report_bar {
             $badge = \html_writer::span(($labels[$code] ?? $code) . ' ' . $count, $class);
             $out .= $baseurl === null ? $badge : \html_writer::link(
                 new \moodle_url($baseurl, ['status' => $selected === $code ? 'all' : $code]),
-                $badge);
+                $badge
+            );
         }
 
-        // ms-sm-auto pushes the summary to the far end of the row on a screen
+        // Ms-sm-auto pushes the summary to the far end of the row on a screen.
         // wide enough for one row, and stops doing so on a phone, where the
         // summary has wrapped onto its own line and belongs at its left edge
-        // rather than floating to the right of nothing.
+        // Rather than floating to the right of nothing.
         return \html_writer::div($out, 'd-flex flex-wrap align-items-center gap-2 ms-sm-auto');
     }
 
@@ -224,14 +231,20 @@ class report_bar {
             ]);
         }
         if (($filters['sort'] ?? '') !== '') {
-            $out .= \html_writer::empty_tag('input',
-                ['type' => 'hidden', 'name' => 'sort', 'value' => $filters['sort']]);
-            $out .= \html_writer::empty_tag('input',
-                ['type' => 'hidden', 'name' => 'dir', 'value' => $filters['dir']]);
+            $out .= \html_writer::empty_tag(
+                'input',
+                ['type' => 'hidden', 'name' => 'sort', 'value' => $filters['sort']]
+            );
+            $out .= \html_writer::empty_tag(
+                'input',
+                ['type' => 'hidden', 'name' => 'dir', 'value' => $filters['dir']]
+            );
         }
         if (($filters['status'] ?? 'all') !== 'all') {
-            $out .= \html_writer::empty_tag('input',
-                ['type' => 'hidden', 'name' => 'status', 'value' => $filters['status']]);
+            $out .= \html_writer::empty_tag(
+                'input',
+                ['type' => 'hidden', 'name' => 'status', 'value' => $filters['status']]
+            );
         }
 
         $out .= \html_writer::empty_tag('input', [
@@ -250,8 +263,11 @@ class report_bar {
         if ($query !== '') {
             // Only when there is something to clear: a permanent link that
             // clears nothing teaches the reader to ignore this row.
-            $out .= \html_writer::link($baseurl, get_string('report_clear', 'mod_multicheckin'),
-                ['class' => 'btn btn-link btn-sm']);
+            $out .= \html_writer::link(
+                $baseurl,
+                get_string('report_clear', 'mod_multicheckin'),
+                ['class' => 'btn btn-link btn-sm']
+            );
         }
 
         return $out . \html_writer::end_tag('form');

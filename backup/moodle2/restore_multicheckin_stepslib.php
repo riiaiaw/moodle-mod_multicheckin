@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Restore step for the multicheckin activity.
  *
@@ -34,7 +32,6 @@ defined('MOODLE_INTERNAL') || die();
  * template is what parentid points at and it is the one row that changes id.
  */
 class restore_multicheckin_activity_structure_step extends restore_activity_structure_step {
-
     /**
      * Restore a user id if it is present, otherwise leave the field alone.
      *
@@ -60,22 +57,36 @@ class restore_multicheckin_activity_structure_step extends restore_activity_stru
         // Points are configuration, not user data: a restored activity keeps
         // its check-in structure and passwords even when student data is
         // excluded, so the activity is immediately usable.
-        $paths[] = new restore_path_element('multicheckin_point',
-            '/activity/multicheckin/points/point');
+        $paths[] = new restore_path_element(
+            'multicheckin_point',
+            '/activity/multicheckin/points/point'
+        );
 
         if ($userinfo) {
-            $paths[] = new restore_path_element('multicheckin_log',
-                '/activity/multicheckin/logs/log');
-            $paths[] = new restore_path_element('multicheckin_geolog',
-                '/activity/multicheckin/geologs/geolog');
-            $paths[] = new restore_path_element('multicheckin_result',
-                '/activity/multicheckin/results/result');
-            $paths[] = new restore_path_element('multicheckin_notify',
-                '/activity/multicheckin/notifies/notify');
-            $paths[] = new restore_path_element('multicheckin_leave',
-                '/activity/multicheckin/leaves/leave');
-            $paths[] = new restore_path_element('multicheckin_photoreq',
-                '/activity/multicheckin/photoreqs/photoreq');
+            $paths[] = new restore_path_element(
+                'multicheckin_log',
+                '/activity/multicheckin/logs/log'
+            );
+            $paths[] = new restore_path_element(
+                'multicheckin_geolog',
+                '/activity/multicheckin/geologs/geolog'
+            );
+            $paths[] = new restore_path_element(
+                'multicheckin_result',
+                '/activity/multicheckin/results/result'
+            );
+            $paths[] = new restore_path_element(
+                'multicheckin_notify',
+                '/activity/multicheckin/notifies/notify'
+            );
+            $paths[] = new restore_path_element(
+                'multicheckin_leave',
+                '/activity/multicheckin/leaves/leave'
+            );
+            $paths[] = new restore_path_element(
+                'multicheckin_photoreq',
+                '/activity/multicheckin/photoreqs/photoreq'
+            );
         }
 
         return $this->prepare_activity_structure($paths);

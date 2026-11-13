@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Editing one occurrence: its title, its note, and its two times.
  *
@@ -48,7 +46,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class occurrence_editor {
-
     /**
      * @var string[] The only columns on {multicheckin} this class will write.
      *
@@ -244,8 +241,10 @@ class occurrence_editor {
         // which counts the stored string exactly as the pre-editor code did.
         if (array_key_exists('description', $values)) {
             $format = (int) ($values['descriptionformat'] ?? FORMAT_PLAIN);
-            if (description_editor::visible_length((string) $values['description'], $format)
-                    > self::DESCRIPTION_MAX) {
+            if (
+                description_editor::visible_length((string) $values['description'], $format)
+                    > self::DESCRIPTION_MAX
+            ) {
                 $errors['description'] = 'session_description_toolong';
             }
         }

@@ -54,6 +54,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -99,22 +100,34 @@ $byhandurl = new moodle_url('/mod/multicheckin/photorequest.php', [
     'point' => $point->id,
 ]);
 
-// ---- The pass, and the gates it does not exempt anyone from ----
+// The pass, and the gates it does not exempt anyone from.
 // The owner is named explicitly rather than left to read_pass()'s default. This
 // is the one page that turns a URL into a camera, and the permit now works from
 // any browser the student is logged into, so "and it belongs to this user" is
 // the check that keeps a forwarded link from checking in somebody who is not
-// here. Spelling it out at the call site keeps that visible where it matters.
-$capturepass = photo_manager::read_pass($passtoken, (int) $session->id, (int) $point->id,
-    (int) $USER->id);
+// Here. Spelling it out at the call site keeps that visible where it matters.
+$capturepass = photo_manager::read_pass(
+    $passtoken,
+    (int) $session->id,
+    (int) $point->id,
+    (int) $USER->id
+);
 if (!$capturepass) {
-    redirect($viewurl, get_string('photo_pass_expired', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('photo_pass_expired', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 if (!session_manager::point_is_open($session, $point)) {
-    redirect($viewurl, get_string('point_closed', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('point_closed', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $already = $DB->record_exists('multicheckin_log', [
@@ -124,14 +137,22 @@ $already = $DB->record_exists('multicheckin_log', [
 ]);
 if ($already) {
     photo_manager::clear_pass($passtoken);
-    redirect($viewurl, get_string('already_checked_in', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('already_checked_in', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 if (leave_manager::record((int) $session->id, (int) $USER->id)) {
     photo_manager::clear_pass($passtoken);
-    redirect($viewurl, get_string('leave_already', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('leave_already', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 // The fence is judged again, on the position the pass carried, with the method
@@ -139,16 +160,25 @@ if (leave_manager::record((int) $session->id, (int) $USER->id)) {
 // inside the fence when the pass was issued is judged again now, and a point
 // that has since drifted outside is refused.
 if (!has_capability('mod/multicheckin:manage', $context)) {
-    $verdict = geo_manager::evaluate($session, $point, (int) $USER->id,
-        (string) ($capturepass['method'] ?? 'self'), $capturepass['clientgeo'] ?? null);
+    $verdict = geo_manager::evaluate(
+        $session,
+        $point,
+        (int) $USER->id,
+        (string) ($capturepass['method'] ?? 'self'),
+        $capturepass['clientgeo'] ?? null
+    );
     if (!$verdict['allowed']) {
         photo_manager::clear_pass($passtoken);
-        redirect($viewurl, geo_manager::reason_string($verdict['reason']), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            geo_manager::reason_string($verdict['reason']),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 }
 
-// ---- The capture itself ----
+// The capture itself.
 $error = '';
 
 if (data_submitted() && optional_param(photo_manager::CAPTURED_FLAG, '', PARAM_ALPHA) === 'yes') {
@@ -161,8 +191,12 @@ if (data_submitted() && optional_param(photo_manager::CAPTURED_FLAG, '', PARAM_A
         $error = get_string('photoerr_' . $verdict['reason'], 'mod_multicheckin');
     } else {
         // The row first: its id is what the photograph is filed under.
-        $logid = session_manager::record_checkin($session, $point, (int) $USER->id,
-            (string) ($capturepass['method'] ?? 'self'));
+        $logid = session_manager::record_checkin(
+            $session,
+            $point,
+            (int) $USER->id,
+            (string) ($capturepass['method'] ?? 'self')
+        );
 
         $stored = null;
         try {
@@ -191,8 +225,12 @@ if (data_submitted() && optional_param(photo_manager::CAPTURED_FLAG, '', PARAM_A
             checkin_engine::refresh_user($session, (int) $USER->id);
             multicheckin_update_grades($session, (int) $USER->id);
 
-            redirect($viewurl, get_string('photo_checkin_recorded', 'mod_multicheckin'), null,
-                \core\output\notification::NOTIFY_SUCCESS);
+            redirect(
+                $viewurl,
+                get_string('photo_checkin_recorded', 'mod_multicheckin'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
         }
     }
 }
@@ -213,7 +251,7 @@ if ($error !== '') {
     echo $OUTPUT->notification($error, \core\output\notification::NOTIFY_ERROR, false);
 }
 
-// ---- The browser in front of the student ----------------------------------
+// The browser in front of the student.
 // A photograph taken inside WeChat, enterprise WeChat, phone QQ or DingTalk is
 // not the photograph the same phone produces in Safari or Chrome: those
 // WebViews bring a camera layer of their own, and a page cannot reach it.
@@ -230,7 +268,7 @@ if ($error !== '') {
 // immediately, and every single time, however fast the student was. A permit
 // minted inside WeChat is a row in a table as of 2.0.23, which is what lets
 // this copy cross browsers; every other browser, in-app or not, keeps its
-// permit in its own session because it never has to travel.
+// Permit in its own session because it never has to travel.
 $formurl = new moodle_url('/mod/multicheckin/photo.php', [
     'id' => $cm->id,
     'session' => $session->id,
@@ -249,9 +287,11 @@ if ($restrictedhost !== null) {
     // button handing out a dead link is worse than no button at all.
     if (photo_manager::pass_must_be_shared()) {
         echo html_writer::div(
-            html_writer::tag('strong',
+            html_writer::tag(
+                'strong',
                 get_string('photo_openinbrowser', 'mod_multicheckin', $hostname),
-                ['class' => 'd-block mb-2'])
+                ['class' => 'd-block mb-2']
+            )
             . html_writer::empty_tag('input', [
                 'type' => 'text',
                 'class' => 'form-control form-control-sm mb-2',
@@ -268,8 +308,10 @@ if ($restrictedhost !== null) {
                     'data-failed' => get_string('photo_copyfailed', 'mod_multicheckin'),
                 ])
                 . html_writer::span('', 'ms-2 small', ['id' => 'multicheckin-photo-copystate']),
-                'd-flex align-items-center'),
-            'alert alert-warning');
+                'd-flex align-items-center'
+            ),
+            'alert alert-warning'
+        );
 
         // Clipboard access is not universal inside these WebViews, so the button
         // has three ways out: the async clipboard, the old execCommand, and
@@ -332,10 +374,13 @@ JS
         // told to use that instead of being handed a copy that would not survive
         // the trip.
         echo html_writer::div(
-            html_writer::tag('strong',
+            html_writer::tag(
+                'strong',
                 get_string('photo_openinbrowser_menu', 'mod_multicheckin', $hostname),
-                ['class' => 'd-block']),
-            'alert alert-warning');
+                ['class' => 'd-block']
+            ),
+            'alert alert-warning'
+        );
     }
 }
 
@@ -347,7 +392,8 @@ echo html_writer::div(get_string('photo_intro', 'mod_multicheckin', format_strin
 echo html_writer::div(
     html_writer::tag('strong', get_string('photo_watermark', 'mod_multicheckin'))
     . ' ' . s(photo_manager::watermark_text($session, $point, $course)),
-    'text-muted small mb-2');
+    'text-muted small mb-2'
+);
 
 echo html_writer::div(get_string('photo_noretake', 'mod_multicheckin'), 'alert alert-info');
 
@@ -421,9 +467,11 @@ echo html_writer::div(
             'id' => 'multicheckin-photo-stage',
             'style' => 'position:relative;overflow:hidden;width:100%;padding-top:75%;'
                 . 'background:#000;border-radius:.5rem;line-height:0;',
-        ]),
+        ]
+    ),
     'multicheckin-photo-frame',
-    ['style' => 'width:100%;max-width:480px;']);
+    ['style' => 'width:100%;max-width:480px;']
+);
 
 echo html_writer::tag('canvas', '', [
     'id' => 'multicheckin-photo-canvas',
@@ -431,8 +479,11 @@ echo html_writer::tag('canvas', '', [
     'style' => 'display:none;',
 ]);
 
-echo html_writer::div(get_string('photo_starting', 'mod_multicheckin'),
-    'text-muted', ['id' => 'multicheckin-photo-status']);
+echo html_writer::div(
+    get_string('photo_starting', 'mod_multicheckin'),
+    'text-muted',
+    ['id' => 'multicheckin-photo-status']
+);
 
 // The shutter and the camera switch share one line, and the line wraps rather
 // than squeezing them on a narrow phone. The switch stays hidden until the page
@@ -452,20 +503,26 @@ echo html_writer::div(
         'disabled' => 'disabled',
         'style' => 'display:none;',
     ]),
-    'd-flex flex-wrap align-items-center gap-2 mt-3');
+    'd-flex flex-wrap align-items-center gap-2 mt-3'
+);
 
 // Shown only once the camera has actually failed, so the by-hand route is
 // offered at the moment it is the only route left - and not as an alternative
 // sitting beside the shutter for anyone to prefer.
-echo html_writer::tag('div',
+echo html_writer::tag(
+    'div',
     html_writer::div(get_string('photo_camera_failed', 'mod_multicheckin'), 'mb-2')
-    . html_writer::link($byhandurl, get_string('photo_request_byhand', 'mod_multicheckin'),
-        ['class' => 'btn btn-secondary']),
+    . html_writer::link(
+        $byhandurl,
+        get_string('photo_request_byhand', 'mod_multicheckin'),
+        ['class' => 'btn btn-secondary']
+    ),
     [
         'class' => 'mt-3 multicheckin-photo-fallback',
         'id' => 'multicheckin-photo-fallback',
         'style' => 'display:none;',
-    ]);
+    ]
+);
 
 echo html_writer::end_tag('form');
 
@@ -474,9 +531,13 @@ echo html_writer::end_tag('form');
 // the browser already had is not evidence of anything.
 echo html_writer::tag('noscript', html_writer::div(
     html_writer::div(get_string('photo_noscript', 'mod_multicheckin'), 'mb-2')
-    . html_writer::link($byhandurl, get_string('photo_request_byhand', 'mod_multicheckin'),
-        ['class' => 'btn btn-secondary']),
-    'alert alert-warning'));
+    . html_writer::link(
+        $byhandurl,
+        get_string('photo_request_byhand', 'mod_multicheckin'),
+        ['class' => 'btn btn-secondary']
+    ),
+    'alert alert-warning'
+));
 
 $jsconfig = json_encode([
     'maxedge' => photo_manager::MAX_EDGE,

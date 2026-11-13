@@ -45,6 +45,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -183,19 +184,20 @@ if ($saved) {
     // the confirmation shows has to be what was stored rather than what was
     // submitted.
     $session = $DB->get_record('multicheckin', ['id' => (int) $session->id], '*', MUST_EXIST);
-
-    // Registered before the header is printed, which is the only point at which
-    // a page can still add script. What it does depends on how this page was
-    // opened, and both readings degrade: with scripting off the close button is
-    // an ordinary link to the page the form was opened from, so it still ends
-    // up somewhere sensible.
-    $PAGE->requires->js_init_code(description_editor::note_saved_js($session, (bool) $embed));
 }
 
-// Registered whether or not the note was saved, and before the header - the
-// back control exists on both readings of this page, and on neither of them
-// may a click inside the dialog navigate the frame instead of closing it.
-$PAGE->requires->js_init_code(description_editor::note_close_js((bool) $embed));
+// The page's script is a module, and it is registered once whether or not the
+// note was just saved: the back control exists on both readings of this page,
+// and on neither of them may a click inside the dialog navigate the frame
+// instead of closing it. Registered before the header, which is the only point
+// at which a page can still add script.
+//
+// What it needs to know - whether this page is in a frame, whether a save just
+// happened, what to tell the page behind - travels in the element rendered
+// below rather than in a string built here. That is issue #10: the payload was
+// inlined into a script element, so every field in it had to carry the JSON hex
+// flags. An attribute is escaped once, by the writer.
+$PAGE->requires->js_call_amd('mod_multicheckin/notepage', 'init');
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('session_note', 'mod_multicheckin'));
@@ -206,36 +208,59 @@ if (session_manager::is_occurrence($session)) {
 } else {
     // The activity's own row. Editing it here still works, but its title is the
     // activity name, and a teacher should not discover that from a popup.
-    echo $OUTPUT->notification(get_string('session_edit_template', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('session_edit_template', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
 }
 
 echo html_writer::div(get_string('session_note_intro', 'mod_multicheckin'), 'text-muted mb-3');
 
 $form->display();
 
+// The settings the module reads. Rendered here rather than passed as an AMD
+// argument so that the note's text never becomes part of a script: this is an
+// attribute, escaped by the writer, and the element is inert without scripting.
+echo description_editor::note_page_data($session, (bool) $embed, $saved);
+
 if ($saved) {
-    echo $OUTPUT->notification(get_string('session_note_saved', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_SUCCESS, false);
+    echo $OUTPUT->notification(
+        get_string('session_note_saved', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_SUCCESS,
+        false
+    );
 
     $stored = trim((string) ($session->description ?? ''));
     if ($stored !== '') {
-        echo html_writer::div(description_editor::render($stored,
-            description_editor::format_of($session), (int) $session->id, $context),
-            'multicheckin-session-description mb-3');
+        echo html_writer::div(
+            description_editor::render(
+                $stored,
+                description_editor::format_of($session),
+                (int) $session->id,
+                $context
+            ),
+            'multicheckin-session-description mb-3'
+        );
     }
 
     echo html_writer::div(
-        html_writer::link($editingurl, get_string('session_note_continue', 'mod_multicheckin'),
-            ['class' => 'btn btn-secondary']) . ' ' .
-        html_writer::link($returnurl, get_string('session_note_close', 'mod_multicheckin'),
-            ['class' => 'btn btn-primary', 'id' => 'multicheckin-note-close']),
-        'mt-2');
+        html_writer::link(
+            $editingurl,
+            get_string('session_note_continue', 'mod_multicheckin'),
+            ['class' => 'btn btn-secondary']
+        ) . ' ' .
+        html_writer::link(
+            $returnurl,
+            get_string('session_note_close', 'mod_multicheckin'),
+            ['class' => 'btn btn-primary', 'id' => 'multicheckin-note-close']
+        ),
+        'mt-2'
+    );
 } else {
     // A link rather than a form posting to that address: inside the dialog the
-    // module turns the click into a close message (see
-    // description_editor::note_close_js), and with scripting off the link still
-    // goes where it says it goes.
+    // module turns the click into a close message (see amd/src/notepage.js),
+    // and with scripting off the link still goes where it says it goes.
     echo html_writer::div(html_writer::link($returnurl, get_string('back'), [
         'class' => 'btn btn-secondary',
         'id' => 'multicheckin-note-back',

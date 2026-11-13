@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin\task;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Scheduled task: when a check-in point opens, remind students who already
  * checked in at an earlier point to check in again.
@@ -27,7 +25,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class send_reminders extends \core\task\scheduled_task {
-
     /**
      * Task name shown in admin.
      *

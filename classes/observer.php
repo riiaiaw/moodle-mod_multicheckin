@@ -16,13 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
-// Observers run during course/module deletion, which is early enough that the
-// component's autoloader cannot be relied on. photo_manager owns the check-in
-// photos that have to go with the session being removed.
-require_once(__DIR__ . '/photo_manager.php');
-
 /**
  * Event observers for mod_multicheckin.
  *
@@ -31,7 +24,6 @@ require_once(__DIR__ . '/photo_manager.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class observer {
-
     /**
      * React to a course module being deleted.
      *

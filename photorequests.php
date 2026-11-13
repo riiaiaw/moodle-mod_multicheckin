@@ -36,6 +36,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -108,8 +109,12 @@ if ($action === 'approve' || $action === 'refuse') {
 
     $row = multicheckin_photoreq_owned($template, $requestid);
     if (!$row) {
-        redirect($listurl, get_string('photoreq_notfound', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $listurl,
+            get_string('photoreq_notfound', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 
     if ($action === 'approve') {
@@ -124,8 +129,12 @@ if ($action === 'approve' || $action === 'refuse') {
         $message = get_string('photoreq_refused_ok', 'mod_multicheckin');
     }
 
-    redirect(new moodle_url($listurl, $showall ? ['all' => 1] : []), $message, null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        new moodle_url($listurl, $showall ? ['all' => 1] : []),
+        $message,
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 $requests = photo_manager::for_template((int) $template->id, !$showall);
@@ -165,13 +174,19 @@ $toggletext = $showall
 $toggleurl = new moodle_url($listurl, $showall ? [] : ['all' => 1]);
 echo html_writer::div(
     html_writer::link($toggleurl, $toggletext, ['class' => 'btn btn-outline-secondary btn-sm'])
-    . ' ' . html_writer::span(get_string('photoreq_waiting', 'mod_multicheckin') . ': ' . $pending,
-        'badge bg-warning text-dark align-middle ms-2'),
-    'mb-3');
+    . ' ' . html_writer::span(
+        get_string('photoreq_waiting', 'mod_multicheckin') . ': ' . $pending,
+        'badge bg-warning text-dark align-middle ms-2'
+    ),
+    'mb-3'
+);
 
 if (!$requests) {
-    echo $OUTPUT->notification(get_string('photoreq_none', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('photoreq_none', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
 } else {
     $table = new html_table();
     $table->head = [
@@ -211,18 +226,22 @@ if (!$requests) {
         // anything that follows links, including a link prefetcher.
         $actions = '';
         if ($status === photo_manager::STATUS_PENDING) {
-            foreach ([
+            foreach (
+                [
                 'approve' => [get_string('photoreq_approve', 'mod_multicheckin'), 'btn btn-primary btn-sm'],
                 'refuse' => [get_string('photoreq_refuse', 'mod_multicheckin'), 'btn btn-outline-danger btn-sm'],
-            ] as $what => $button) {
-                $actions .= html_writer::tag('form',
+                ] as $what => $button
+            ) {
+                $actions .= html_writer::tag(
+                    'form',
                     html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()])
                     . html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $cm->id])
                     . html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => $what])
                     . html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'request', 'value' => (int) $request->id])
                     . ($showall ? html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'all', 'value' => 1]) : '')
                     . html_writer::tag('button', $button[0], ['type' => 'submit', 'class' => $button[1]]),
-                    ['method' => 'post', 'action' => $listurl->out(false), 'class' => 'd-inline-block me-1']);
+                    ['method' => 'post', 'action' => $listurl->out(false), 'class' => 'd-inline-block me-1']
+                );
             }
         }
 

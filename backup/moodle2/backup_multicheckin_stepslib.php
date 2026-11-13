@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Structure step that backs up one multicheckin activity.
  *
@@ -34,7 +32,6 @@ defined('MOODLE_INTERNAL') || die();
  * re-linked on restore by the parentid and sessionid fields it carries.
  */
 class backup_multicheckin_activity_structure_step extends backup_activity_structure_step {
-
     /**
      * Define the structure of the multicheckin.xml file.
      *
@@ -45,7 +42,7 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
         // To know if we are including userinfo.
         $userinfo = $this->get_setting_value('userinfo');
 
-        // ---- Elements -----------------------------------------------------
+        // Elements.
 
         $multicheckin = new backup_nested_element('multicheckin', ['id'], [
             'name', 'intro', 'introformat', 'description', 'descriptionformat', 'timestart', 'timeend',
@@ -105,7 +102,7 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
             'timereviewed', 'timecreated', 'timemodified',
         ]);
 
-        // ---- Tree ---------------------------------------------------------
+        // Tree.
 
         $multicheckin->add_child($points);
         $points->add_child($point);
@@ -128,7 +125,7 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
         $multicheckin->add_child($photoreqs);
         $photoreqs->add_child($photoreq);
 
-        // ---- Sources ------------------------------------------------------
+        // Sources.
 
         // The activity AND its occurrences. An occurrence is a row of this
         // same table whose parentid points at the activity, so a plain
@@ -138,7 +135,8 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
         // and its occurrences together in one element.
         $multicheckin->set_source_sql(
             'SELECT * FROM {multicheckin} WHERE id = ? OR parentid = ?',
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         // One query per child table covering every session of the activity.
         // The same id-OR-parentid sub-select is reused so a child row is
@@ -147,33 +145,40 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
 
         $point->set_source_sql(
             "SELECT * FROM {multicheckin_point} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $log->set_source_sql(
             "SELECT * FROM {multicheckin_log} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $geolog->set_source_sql(
             "SELECT * FROM {multicheckin_geo_log} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $result->set_source_sql(
             "SELECT * FROM {multicheckin_result} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $notify->set_source_sql(
             "SELECT * FROM {multicheckin_notify} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $leave->set_source_sql(
             "SELECT * FROM {multicheckin_leave} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
         $photoreq->set_source_sql(
             "SELECT * FROM {multicheckin_photoreq} WHERE sessionid IN ($sessionids)",
-            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]);
+            [backup::VAR_ACTIVITYID, backup::VAR_ACTIVITYID]
+        );
 
-        // ---- Annotations --------------------------------------------------
+        // Annotations.
 
         $multicheckin->annotate_ids('user', 'userid');
 
@@ -186,7 +191,10 @@ class backup_multicheckin_activity_structure_step extends backup_activity_struct
         $photoreq->annotate_ids('user', 'userid');
         $photoreq->annotate_ids('user', 'reviewedby');
 
-        $log->annotate_files('mod_multicheckin', 'intro', null);
+        // The intro belongs to the activity, not to a check-in row: the log
+        // element is emptied when user data is excluded, and a backup without
+        // user data still has to carry the images a teacher put in the intro.
+        $multicheckin->annotate_files('mod_multicheckin', 'intro', null);
 
         // The check-in photographs. The itemid is the LOG row's own id, because
         // one photograph proves one check-in rather than one occurrence, so

@@ -37,7 +37,6 @@ require_once(__DIR__ . '/backup_multicheckin_stepslib.php');
  * numeric ids.
  */
 class backup_multicheckin_activity_task extends backup_activity_task {
-
     /**
      * No specific settings for this activity.
      *
@@ -54,7 +53,9 @@ class backup_multicheckin_activity_task extends backup_activity_task {
      */
     protected function define_my_steps() {
         $this->add_step(new backup_multicheckin_activity_structure_step(
-            'multicheckin_structure', 'multicheckin.xml'));
+            'multicheckin_structure',
+            'multicheckin.xml'
+        ));
     }
 
     /**

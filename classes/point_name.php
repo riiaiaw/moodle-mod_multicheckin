@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The name of a check-in point, in the reader's own language.
  *
@@ -40,7 +38,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class point_name {
-
     /**
      * The stored names this plugin writes by itself, each mapped to the string
      * it was built from.

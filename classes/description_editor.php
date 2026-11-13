@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The occurrence description: one field, two formats, and the files it can hold.
  *
@@ -50,7 +48,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class description_editor {
-
     /** @var string Component the description files belong to. */
     public const COMPONENT = 'mod_multicheckin';
 
@@ -140,12 +137,23 @@ class description_editor {
      * @param \context $context Module context.
      * @return string Text with every @@PLUGINFILE@@ rewritten to the stored file.
      */
-    public static function save_draft(int $draftitemid, string $text, int $sessionid,
-            \context $context): string {
+    public static function save_draft(
+        int $draftitemid,
+        string $text,
+        int $sessionid,
+        \context $context
+    ): string {
         $options = self::editor_options($context);
 
-        return file_save_draft_area_files($draftitemid, $context->id, self::COMPONENT, self::FILEAREA,
-            $sessionid, $options, $text);
+        return file_save_draft_area_files(
+            $draftitemid,
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            $sessionid,
+            $options,
+            $text
+        );
     }
 
     /**
@@ -161,7 +169,7 @@ class description_editor {
      * @return int
      */
     public static function visible_length(string $text, int $format): int {
-        // (int) on both sides: core defines the FORMAT_ constants as STRINGS
+        // Cast to int on both sides: core defines the FORMAT_ constants as STRINGS
         // ('0'..'4'), so `2 !== FORMAT_PLAIN` is true and a strict comparison
         // against an int silently takes the wrong branch.
         if ($format !== (int) FORMAT_PLAIN) {
@@ -196,8 +204,14 @@ class description_editor {
         // is a filter reading, and format_text() is what reads it. A crafted or
         // stale value cannot escape this branch: it is a format_text() call, not
         // an echo.
-        $text = file_rewrite_pluginfile_urls($text, 'pluginfile.php', $context->id,
-            self::COMPONENT, self::FILEAREA, $sessionid);
+        $text = file_rewrite_pluginfile_urls(
+            $text,
+            'pluginfile.php',
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            $sessionid
+        );
 
         return format_text($text, $format, [
             'context' => $context,
@@ -264,7 +278,8 @@ class description_editor {
             'return' => $return,
         ]);
 
-        return \html_writer::link($url,
+        return \html_writer::link(
+            $url,
             get_string($hasnote ? 'session_description_edit' : 'session_description_add', 'mod_multicheckin'),
             [
                 'class' => 'btn btn-outline-secondary btn-sm multicheckin-noteopen',
@@ -274,7 +289,8 @@ class description_editor {
                 // the occurrence, which is what the module needs to find the
                 // right cell to redraw once the form reports a save.
                 'data-multicheckin-note' => (string) $sessionid,
-            ]);
+            ]
+        );
     }
 
     /**
@@ -303,109 +319,79 @@ class description_editor {
     }
 
     /**
-     * The script a saved form runs: report the save, and close the right way.
+     * What the note page's module needs to know, as data.
      *
      * Two readers, one page. Inside the dialog the page behind it is told what
      * was saved, so it redraws the preview and the button without a reload - a
      * reload there would discard whatever the teacher had already typed into
      * the form beside the note, which is the one field they were not editing.
-     * In a window of its own there is nothing to redraw, and the close button
+     * In a window of its own there is nothing to redraw, and the close control
      * goes back to reloading the opener, which is how this worked before
      * v2.0.3.
      *
-     * With scripting off neither branch runs and the close button is an
-     * ordinary link to the page the form was opened from, so it still ends up
-     * somewhere sensible.
+     * Data, not JavaScript. This used to be returned as a script string and
+     * inlined with js_init_code() (issue #10), which meant every field in the
+     * payload had to remember the JSON hex flags or a note carrying a closing
+     * tag would end the script element early. The page carries the same values
+     * in an attribute now, escaped once by the HTML writer, and the behaviour
+     * lives in amd/src/notepage.js.
      *
      * @param \stdClass $occurrence Occurrence record, carrying the stored note.
      * @param bool $embed Whether the page was opened inside the dialog.
-     * @return string JavaScript.
+     * @param bool $saved Whether the note has just been saved.
+     * @return array
      */
-    public static function note_saved_js(\stdClass $occurrence, bool $embed): string {
-        $stored = trim((string) ($occurrence->description ?? ''));
+    public static function note_page_config(\stdClass $occurrence, bool $embed, bool $saved): array {
+        $config = [
+            'embedded' => $embed,
+            'saved' => $saved,
+            'payload' => null,
+        ];
 
-        // The hex flags are load-bearing rather than belt and braces: this
-        // string is inlined into a <script> element, and a note containing the
-        // closing tag - or an angle bracket, or an ampersand - would otherwise
-        // end that element early and take the rest of the page with it.
-        $payload = json_encode([
-            'type' => 'multicheckin-note-saved',
-            'sessionid' => (int) $occurrence->id,
-            'summary' => self::summary($stored, self::format_of($occurrence)),
-            'hasnote' => $stored !== '',
-        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-        $embedded = $embed ? 'true' : 'false';
-
-        return <<<JS
-(function() {
-    var payload = {$payload};
-    var embedded = {$embedded};
-    // A frame, not merely a window: the page is its own parent when it is not
-    // embedded, and messaging itself would be a no-op that looks like a bug.
-    var frame = embedded && window.parent && window.parent !== window;
-
-    if (frame) {
-        window.parent.postMessage(payload, window.location.origin);
-    }
-
-    var link = document.getElementById('multicheckin-note-close');
-    if (!link) {
-        return;
-    }
-    link.addEventListener('click', function(e) {
-        if (frame) {
-            e.preventDefault();
-            window.parent.postMessage({type: 'multicheckin-note-close'}, window.location.origin);
-            return;
+        if ($saved) {
+            $stored = trim((string) ($occurrence->description ?? ''));
+            $config['payload'] = [
+                'type' => 'multicheckin-note-saved',
+                'sessionid' => (int) $occurrence->id,
+                'summary' => self::summary($stored, self::format_of($occurrence)),
+                'hasnote' => $stored !== '',
+            ];
         }
-        if (window.opener && !window.opener.closed) {
-            e.preventDefault();
-            window.opener.location.reload();
-            window.close();
-        }
-    });
-})();
-JS;
+
+        return $config;
     }
 
     /**
-     * Make the back control close the dialog the form is filling.
+     * The element that carries that data into the page.
      *
-     * The control is a real link to the page the form was opened from, so a
-     * browser without scripting still ends up somewhere sensible - and so a
-     * click that this snippet does not handle opens the page rather than doing
-     * nothing. Inside the dialog that same link is wrong: it navigates the
-     * frame, and the dialog belongs to the page around it, so the teacher is
-     * left with the whole series table loaded inside a box that was sized for
-     * a three-field form. Nothing closes it, because only the owner can.
+     * Hidden, and carrying the settings in an attribute rather than a script
+     * element: html_writer escapes the value, so a note containing a closing
+     * tag is no closer to ending anything than one containing a comma. That is
+     * one place to get right instead of one per field, which is what the hex
+     * flags were.
      *
-     * @param bool $embed Whether the page is filling a dialog.
-     * @return string JavaScript.
+     * The module reads `data-config`. With scripting off the element is inert
+     * and both controls keep the href that still takes them somewhere sensible.
+     *
+     * @param \stdClass $occurrence Occurrence record.
+     * @param bool $embed Whether the page was opened inside the dialog.
+     * @param bool $saved Whether the note has just been saved.
+     * @return string HTML.
      */
-    public static function note_close_js(bool $embed): string {
-        $embedded = $embed ? 'true' : 'false';
+    public static function note_page_data(\stdClass $occurrence, bool $embed, bool $saved): string {
+        $json = json_encode(
+            self::note_page_config($occurrence, $embed, $saved),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
 
-        return <<<JS
-(function() {
-    var embedded = {$embedded};
-    var frame = embedded && window.parent && window.parent !== window;
-    var back = document.getElementById('multicheckin-note-back');
-    if (!back) {
-        return;
-    }
-    back.addEventListener('click', function(e) {
-        if (frame) {
-            e.preventDefault();
-            window.parent.postMessage({type: 'multicheckin-note-close'}, window.location.origin);
-            return;
-        }
-        if (window.opener && !window.opener.closed) {
-            e.preventDefault();
-            window.close();
-        }
-    });
-})();
-JS;
+        // Note the argument order: class, then id, then attributes. The id is
+        // what the module looks for, so it stays in its own parameter.
+        return \html_writer::div('', 'd-none', 'multicheckin-notepage-data', [
+            // A note that is not valid UTF-8 cannot be encoded; the page then
+            // behaves as it did before this module existed (the controls
+            // navigate) rather than rendering a broken attribute.
+            'data-config' => $json === false ? '{}' : $json,
+        ]);
     }
 
     /**
@@ -432,7 +418,8 @@ JS;
         return \html_writer::div(
             \html_writer::div($body, 'mb-1 multicheckin-note-summary') .
             self::open_button($cmid, (int) $occurrence->id, $return, $stored !== ''),
-            'multicheckin-note-cell');
+            'multicheckin-note-cell'
+        );
     }
 
     /**
@@ -459,15 +446,25 @@ JS;
      * @param int $draftitemid Draft itemid the request carried, 0 to make a new one.
      * @return array ['text' => string, 'format' => int, 'itemid' => int].
      */
-    public static function editor_value(\stdClass $occurrence, \context $context,
-            int $draftitemid = 0): array {
+    public static function editor_value(
+        \stdClass $occurrence,
+        \context $context,
+        int $draftitemid = 0
+    ): array {
         $options = self::editor_options($context);
         if ($draftitemid === 0) {
             $draftitemid = file_get_submitted_draft_itemid(self::FIELD);
         }
 
-        $text = file_prepare_draft_area($draftitemid, $context->id, self::COMPONENT, self::FILEAREA,
-            (int) $occurrence->id, $options, (string) ($occurrence->description ?? ''));
+        $text = file_prepare_draft_area(
+            $draftitemid,
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            (int) $occurrence->id,
+            $options,
+            (string) ($occurrence->description ?? '')
+        );
 
         return [
             'text' => (string) $text,

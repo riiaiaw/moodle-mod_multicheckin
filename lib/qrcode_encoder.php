@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Minimal, dependency-free QR Code (Model 2) encoder.
  *
@@ -33,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qrcode_encoder {
-
     /** @var array Per-version ECC block structure for level M: [ecc_per_block, [[num_blocks, data_codewords], ...]] */
     private const ECC_M = [
         1  => [10, [[1, 16]]],
@@ -75,10 +72,10 @@ class qrcode_encoder {
         $bits = self::byte_stream($data, $version);
 
         // 2. Split into data codewords and add Reed-Solomon ECC.
-        [$dataCodewords, $eccCodewords] = self::split_codewords($version, $bits);
+        [$datacodewords, $ecccodewords] = self::split_codewords($version, $bits);
 
         // 3. Interleave.
-        $final = self::interleave($dataCodewords, $eccCodewords);
+        $final = self::interleave($datacodewords, $ecccodewords);
 
         // 4. Build the matrix and place everything.
         $matrix = self::new_matrix($size);
@@ -212,18 +209,18 @@ class qrcode_encoder {
 
         [$eccperblock, $spec] = self::ECC_M[$version];
 
-        $dataBlocks = [];
-        $eccBlocks = [];
+        $datablocks = [];
+        $eccblocks = [];
         $offset = 0;
         foreach ($spec as [$numblocks, $dcw]) {
             for ($b = 0; $b < $numblocks; $b++) {
                 $block = array_slice($codewords, $offset, $dcw);
                 $offset += $dcw;
-                $dataBlocks[] = $block;
-                $eccBlocks[] = self::reed_solomon($block, $eccperblock);
+                $datablocks[] = $block;
+                $eccblocks[] = self::reed_solomon($block, $eccperblock);
             }
         }
-        return [$dataBlocks, $eccBlocks];
+        return [$datablocks, $eccblocks];
     }
 
     /**
@@ -310,23 +307,23 @@ class qrcode_encoder {
     /**
      * Interleave data and ECC codewords per the spec.
      *
-     * @param array $dataBlocks Data blocks.
-     * @param array $eccBlocks ECC blocks.
+     * @param array $datablocks Data blocks.
+     * @param array $eccblocks ECC blocks.
      * @return array Codeword sequence.
      */
-    private static function interleave(array $dataBlocks, array $eccBlocks): array {
+    private static function interleave(array $datablocks, array $eccblocks): array {
         $out = [];
-        $maxdata = max(array_map('count', $dataBlocks));
+        $maxdata = max(array_map('count', $datablocks));
         for ($i = 0; $i < $maxdata; $i++) {
-            foreach ($dataBlocks as $block) {
+            foreach ($datablocks as $block) {
                 if (isset($block[$i])) {
                     $out[] = $block[$i];
                 }
             }
         }
-        $maxecc = max(array_map('count', $eccBlocks));
+        $maxecc = max(array_map('count', $eccblocks));
         for ($i = 0; $i < $maxecc; $i++) {
-            foreach ($eccBlocks as $block) {
+            foreach ($eccblocks as $block) {
                 if (isset($block[$i])) {
                     $out[] = $block[$i];
                 }
@@ -507,14 +504,22 @@ class qrcode_encoder {
      */
     private static function mask_bit(int $mask, int $x, int $y): bool {
         switch ($mask) {
-            case 0: return ($x + $y) % 2 === 0;
-            case 1: return $y % 2 === 0;
-            case 2: return $x % 3 === 0;
-            case 3: return ($x + $y) % 3 === 0;
-            case 4: return (intdiv($y, 2) + intdiv($x, 3)) % 2 === 0;
-            case 5: return (($x * $y) % 2) + (($x * $y) % 3) === 0;
-            case 6: return ((($x * $y) % 2) + (($x * $y) % 3)) % 2 === 0;
-            case 7: return ((($x + $y) % 2) + (($x * $y) % 3)) % 2 === 0;
+            case 0:
+                return ($x + $y) % 2 === 0;
+            case 1:
+                return $y % 2 === 0;
+            case 2:
+                return $x % 3 === 0;
+            case 3:
+                return ($x + $y) % 3 === 0;
+            case 4:
+                return (intdiv($y, 2) + intdiv($x, 3)) % 2 === 0;
+            case 5:
+                return (($x * $y) % 2) + (($x * $y) % 3) === 0;
+            case 6:
+                return ((($x * $y) % 2) + (($x * $y) % 3)) % 2 === 0;
+            case 7:
+                return ((($x + $y) % 2) + (($x * $y) % 3)) % 2 === 0;
         }
         return false;
     }
@@ -679,9 +684,11 @@ class qrcode_encoder {
         $score = 0;
         for ($y = 0; $y < $size - 1; $y++) {
             for ($x = 0; $x < $size - 1; $x++) {
-                if ($m[$y][$x] === $m[$y][$x + 1]
+                if (
+                    $m[$y][$x] === $m[$y][$x + 1]
                         && $m[$y][$x] === $m[$y + 1][$x]
-                        && $m[$y][$x] === $m[$y + 1][$x + 1]) {
+                        && $m[$y][$x] === $m[$y + 1][$x + 1]
+                ) {
                     $score += 3;
                 }
             }

@@ -25,25 +25,27 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-
-    // ---- Occurrence generation --------------------------------------------
+    // Occurrence generation.
     //
     // The cap exists because one form submission can otherwise create an
     // unbounded number of rows: a daily repeat with a typo'd end year is
     // thousands of sessions, each with its own check-in points. It defaults to
     // sixty - roughly a term of twice-weekly classes - and is a site setting
     // rather than a hard constant so a school running year-round daily
-    // attendance can raise it without patching the code.
+    // Attendance can raise it without patching the code.
     $settings->add(new admin_setting_configtext(
         'mod_multicheckin/maxsessions',
         get_string('maxsessions', 'mod_multicheckin'),
-        get_string('maxsessions_desc', 'mod_multicheckin',
-            \mod_multicheckin\schedule_planner::HARD_MAX_SESSIONS),
+        get_string(
+            'maxsessions_desc',
+            'mod_multicheckin',
+            \mod_multicheckin\schedule_planner::HARD_MAX_SESSIONS
+        ),
         \mod_multicheckin\schedule_planner::DEFAULT_MAX_SESSIONS,
         PARAM_INT
     ));
 
-    // ---- Report controls --------------------------------------------------
+    // Report controls.
     //
     // Sorting, the status filter and the keyword search on the attendance
     // report.
@@ -60,7 +62,7 @@ if ($ADMIN->fulltree) {
     // existed - no links in the summary, no search box, the parameters read but
     // ignored. That makes it the first thing to try when something odd appears
     // after an upgrade, and the first thing to eliminate before concluding the
-    // plugin is at fault.
+    // Plugin is at fault.
     $settings->add(new admin_setting_configcheckbox(
         'mod_multicheckin/reportfilters',
         get_string('reportfilters', 'mod_multicheckin'),

@@ -16,16 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
-// The context the photos are filed under is the same one the leave notes use,
-// so this class borrows leave_manager's resolver rather than answering the
-// question a second way. The cleanup paths below run from pages opened directly
-// by URL and from lib.php early in the request, where the component's
-// autoloader is not always primed yet; requiring it here keeps that resolver
-// reachable (the same pattern session_manager uses for schedule_planner).
-require_once(__DIR__ . '/leave_manager.php');
-
 /**
  * On-the-spot photographs of a check-in, and the requests raised when one
  * cannot be taken.
@@ -72,7 +62,6 @@ require_once(__DIR__ . '/leave_manager.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class photo_manager {
-
     /** @var string Component name, for the file API. */
     public const COMPONENT = 'mod_multicheckin';
 
@@ -214,7 +203,7 @@ class photo_manager {
         if (strpos($agent, 'dingtalk') !== false) {
             return 'dingtalk';
         }
-        // `mqqbrowser` on its own is the QQ Browser, which is a normal browser.
+        // The `mqqbrowser` token on its own is the QQ Browser, which is a normal browser.
         if (strpos($agent, 'qq/') !== false) {
             return 'qq';
         }
@@ -291,8 +280,12 @@ class photo_manager {
      * @param int|null $now Timestamp to print, defaults to now.
      * @return string
      */
-    public static function watermark_text(\stdClass $session, \stdClass $point, \stdClass $course,
-            ?int $now = null): string {
+    public static function watermark_text(
+        \stdClass $session,
+        \stdClass $point,
+        \stdClass $course,
+        ?int $now = null
+    ): string {
         $now = $now ?? time();
 
         return implode('  ', [
@@ -415,8 +408,14 @@ class photo_manager {
         }
 
         $fs = get_file_storage();
-        $files = $fs->get_area_files($context->id, self::COMPONENT, self::FILEAREA, $logid,
-            'sortorder, id', false);
+        $files = $fs->get_area_files(
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            $logid,
+            'sortorder, id',
+            false
+        );
 
         return $files ? reset($files) : null;
     }
@@ -453,8 +452,14 @@ class photo_manager {
      * @return \moodle_url
      */
     public static function url_for_file(\stored_file $file): \moodle_url {
-        return \moodle_url::make_pluginfile_url($file->get_contextid(), self::COMPONENT, self::FILEAREA,
-            $file->get_itemid(), $file->get_filepath(), $file->get_filename());
+        return \moodle_url::make_pluginfile_url(
+            $file->get_contextid(),
+            self::COMPONENT,
+            self::FILEAREA,
+            $file->get_itemid(),
+            $file->get_filepath(),
+            $file->get_filename()
+        );
     }
 
     /**
@@ -509,9 +514,13 @@ class photo_manager {
         }
 
         [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'photouser');
-        $logs = $DB->get_records_select('multicheckin_log',
+        $logs = $DB->get_records_select(
+            'multicheckin_log',
             "sessionid = :sessionid AND userid {$insql}",
-            $inparams + ['sessionid' => (int) $session->id], '', 'id,userid,pointid');
+            $inparams + ['sessionid' => (int) $session->id],
+            '',
+            'id,userid,pointid'
+        );
         if (!$logs) {
             return [];
         }
@@ -521,8 +530,14 @@ class photo_manager {
             $bylog[(int) $log->id] = $log;
         }
 
-        $files = get_file_storage()->get_area_files($context->id, self::COMPONENT, self::FILEAREA,
-            false, 'sortorder, id', false);
+        $files = get_file_storage()->get_area_files(
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            false,
+            'sortorder, id',
+            false
+        );
 
         $out = [];
         foreach ($files as $file) {
@@ -562,12 +577,11 @@ class photo_manager {
         }
 
         return has_any_capability(
-            ['mod/multicheckin:manage', 'mod/multicheckin:viewreports'], $context);
+            ['mod/multicheckin:manage', 'mod/multicheckin:viewreports'],
+            $context
+        );
     }
 
-    // -----------------------------------------------------------------------
-    // Capture passes.
-    // -----------------------------------------------------------------------
 
     /**
      * Mint a pass authorising one capture for one point.
@@ -617,8 +631,13 @@ class photo_manager {
      * @param int|null $userid Owner; the current user when omitted.
      * @return string The token to hand back in the URL.
      */
-    public static function issue_pass(\stdClass $session, \stdClass $point, string $method,
-            ?array $clientgeo = null, ?int $userid = null): string {
+    public static function issue_pass(
+        \stdClass $session,
+        \stdClass $point,
+        string $method,
+        ?array $clientgeo = null,
+        ?int $userid = null
+    ): string {
         global $DB, $USER;
 
         $userid = $userid ?? (int) $USER->id;
@@ -688,8 +707,12 @@ class photo_manager {
      * @param int|null $userid Owner it must belong to; the current user when omitted.
      * @return array|null
      */
-    public static function read_pass(string $token, int $sessionid, int $pointid,
-            ?int $userid = null): ?array {
+    public static function read_pass(
+        string $token,
+        int $sessionid,
+        int $pointid,
+        ?int $userid = null
+    ): ?array {
         global $DB, $USER;
 
         $userid = $userid ?? (int) $USER->id;
@@ -941,9 +964,6 @@ class photo_manager {
         return is_array($decoded) ? $decoded : null;
     }
 
-    // -----------------------------------------------------------------------
-    // By-hand verification requests.
-    // -----------------------------------------------------------------------
 
     /**
      * One student's request for one point, or null when there is none.
@@ -981,8 +1001,12 @@ class photo_manager {
      * @param string $reason Free-text reason (may be empty).
      * @return \stdClass The stored request row.
      */
-    public static function request(\stdClass $session, \stdClass $point, int $userid,
-            string $reason = ''): \stdClass {
+    public static function request(
+        \stdClass $session,
+        \stdClass $point,
+        int $userid,
+        string $reason = ''
+    ): \stdClass {
         global $DB;
 
         $now = time();

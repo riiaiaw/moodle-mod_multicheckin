@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin\external;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
@@ -41,7 +39,6 @@ use mod_multicheckin\place_manager;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class list_places extends external_api {
-
     /**
      * Parameters.
      *

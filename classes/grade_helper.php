@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Aggregate one activity's occurrence results and push them into the gradebook.
  *
@@ -45,7 +43,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class grade_helper {
-
     /**
      * Return the grade for a user, aggregated over the activity's occurrences.
      *
@@ -105,10 +102,10 @@ class grade_helper {
     public static function update_grades(\stdClass $session, int $userid = 0): bool {
         global $CFG;
 
-        // grade_update() lives in gradelib.php. A page request has usually
+        // Grade_update() lives in gradelib.php. A page request has usually.
         // pulled that in already; a scheduled task has not, and the test
         // harness supplies its own recorder instead, so only load it when it is
-        // genuinely missing.
+        // Genuinely missing.
         if (!function_exists('grade_update')) {
             require_once($CFG->libdir . '/gradelib.php');
         }
@@ -140,8 +137,16 @@ class grade_helper {
             $items[$u] = $item;
         }
 
-        grade_update('mod/multicheckin', $session->course, 'mod', 'multicheckin',
-            $session->id, 0, null, $items);
+        grade_update(
+            'mod/multicheckin',
+            $session->course,
+            'mod',
+            'multicheckin',
+            $session->id,
+            0,
+            null,
+            $items
+        );
 
         return true;
     }

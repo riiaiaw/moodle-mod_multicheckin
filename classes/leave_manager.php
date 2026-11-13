@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The "on leave" declaration for one student in one occurrence.
  *
@@ -48,7 +46,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class leave_manager {
-
     /** @var string Component name, for the file API. */
     public const COMPONENT = 'mod_multicheckin';
 
@@ -202,8 +199,14 @@ class leave_manager {
      * @param int $byuserid Who is writing this.
      * @return \stdClass The stored leave row.
      */
-    public static function save(\stdClass $session, int $userid, string $reason, string $origin,
-            ?int $draftitemid = null, int $byuserid = 0): \stdClass {
+    public static function save(
+        \stdClass $session,
+        int $userid,
+        string $reason,
+        string $origin,
+        ?int $draftitemid = null,
+        int $byuserid = 0
+    ): \stdClass {
         global $DB;
 
         $now = time();
@@ -240,8 +243,14 @@ class leave_manager {
 
         if ($draftitemid !== null) {
             $context = self::context_for_session($session);
-            file_save_draft_area_files($draftitemid, $context->id, self::COMPONENT, self::FILEAREA,
-                (int) $row->id, self::file_options());
+            file_save_draft_area_files(
+                $draftitemid,
+                $context->id,
+                self::COMPONENT,
+                self::FILEAREA,
+                (int) $row->id,
+                self::file_options()
+            );
         }
 
         return $row;
@@ -312,8 +321,14 @@ class leave_manager {
     public static function attachment(\stdClass $session, int $leaveid): ?\stored_file {
         $context = self::context_for_session($session);
         $fs = get_file_storage();
-        $files = $fs->get_area_files($context->id, self::COMPONENT, self::FILEAREA, $leaveid,
-            'sortorder, id', false);
+        $files = $fs->get_area_files(
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            $leaveid,
+            'sortorder, id',
+            false
+        );
 
         if (!$files) {
             return null;
@@ -414,7 +429,9 @@ class leave_manager {
         }
 
         return has_any_capability(
-            ['mod/multicheckin:manage', 'mod/multicheckin:viewreports'], $context);
+            ['mod/multicheckin:manage', 'mod/multicheckin:viewreports'],
+            $context
+        );
     }
 
     /**

@@ -31,7 +31,6 @@ require_once(__DIR__ . '/classes/place_manager.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_multicheckin_mod_form extends moodleform_mod {
-
     /**
      * Definition.
      *
@@ -55,12 +54,20 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // Timing.
         $mform->addElement('header', 'timing', get_string('timing', 'mod_multicheckin'));
 
-        $mform->addElement('date_time_selector', 'timestart',
-            get_string('timestart', 'mod_multicheckin'), ['optional' => false]);
+        $mform->addElement(
+            'date_time_selector',
+            'timestart',
+            get_string('timestart', 'mod_multicheckin'),
+            ['optional' => false]
+        );
         $mform->addHelpButton('timestart', 'timestart', 'mod_multicheckin');
 
-        $mform->addElement('date_time_selector', 'timeend',
-            get_string('timeend', 'mod_multicheckin'), ['optional' => false]);
+        $mform->addElement(
+            'date_time_selector',
+            'timeend',
+            get_string('timeend', 'mod_multicheckin'),
+            ['optional' => false]
+        );
 
         $mform->addElement('text', 'lategrace', get_string('lategrace', 'mod_multicheckin'), ['size' => 8]);
         $mform->setType('lategrace', PARAM_INT);
@@ -71,8 +78,14 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // successful sign-in is the entire record: the status is present or
         // late and the early-leave machinery below is skipped, so the mode and
         // grace fields are hidden rather than left to look meaningful.
-        $mform->addElement('advcheckbox', 'requiresignout',
-            get_string('requiresignout', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'requiresignout',
+            get_string('requiresignout', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         $mform->setDefault('requiresignout', 1);
         $mform->addHelpButton('requiresignout', 'requiresignout', 'mod_multicheckin');
 
@@ -90,9 +103,9 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $mform->addHelpButton('earlymode', 'earlymode', 'mod_multicheckin');
         $mform->hideIf('earlymode', 'requiresignout', 'notchecked');
 
-        // ---- Mid-session check-ins ----
+        // Mid-session check-ins.
         // The teacher decides how many mid check-ins there are and when each
-        // one opens; the manage page still allows per-point fine tuning.
+        // One opens; the manage page still allows per-point fine tuning.
         $midmax = \mod_multicheckin\session_manager::MID_MAX;
         $countoptions = [];
         for ($k = 0; $k <= $midmax; $k++) {
@@ -102,8 +115,12 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $mform->addElement('header', 'midcheckins', get_string('midsection', 'mod_multicheckin'));
         $mform->addHelpButton('midcheckins', 'midsection', 'mod_multicheckin');
 
-        $mform->addElement('select', 'midcount',
-            get_string('midcount', 'mod_multicheckin'), $countoptions);
+        $mform->addElement(
+            'select',
+            'midcount',
+            get_string('midcount', 'mod_multicheckin'),
+            $countoptions
+        );
         $mform->setDefault('midcount', 0);
         $mform->addHelpButton('midcount', 'midcount', 'mod_multicheckin');
 
@@ -115,13 +132,23 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // an element's name, and a 'static' element has none, so driving it
         // from midcount is not something the form API guarantees. The wording
         // reads correctly at any count, which needs no JavaScript at all.
-        $mform->addElement('static', 'midcounthint', '',
-            html_writer::div(get_string('midcount_zero_hint', 'mod_multicheckin'),
-                'text-muted small'));
+        $mform->addElement(
+            'static',
+            'midcounthint',
+            '',
+            html_writer::div(
+                get_string('midcount_zero_hint', 'mod_multicheckin'),
+                'text-muted small'
+            )
+        );
 
         for ($k = 1; $k <= $midmax; $k++) {
-            $mform->addElement('text', "midopen{$k}",
-                get_string('midopenlabel', 'mod_multicheckin', $k), ['size' => 6]);
+            $mform->addElement(
+                'text',
+                "midopen{$k}",
+                get_string('midopenlabel', 'mod_multicheckin', $k),
+                ['size' => 6]
+            );
             $mform->setType("midopen{$k}", PARAM_INT);
             if ($k === 1) {
                 $mform->addHelpButton("midopen{$k}", 'midopen', 'mod_multicheckin');
@@ -130,18 +157,22 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             $mform->hideIf("midopen{$k}", 'midcount', 'neq', (string) $k);
         }
 
-        $mform->addElement('text', 'midwindow',
-            get_string('midwindow', 'mod_multicheckin'), ['size' => 6]);
+        $mform->addElement(
+            'text',
+            'midwindow',
+            get_string('midwindow', 'mod_multicheckin'),
+            ['size' => 6]
+        );
         $mform->setType('midwindow', PARAM_INT);
         $mform->setDefault('midwindow', 10);
         $mform->addHelpButton('midwindow', 'midwindow', 'mod_multicheckin');
 
-        // ---- Occurrence series ----
+        // Occurrence series.
         // One activity carrying a term's attendance. The activity row keeps the
         // shared settings; each generated occurrence gets its own date. The
         // rule lives here and nowhere else - the preview below and the save
         // path both call schedule_planner, so what the teacher sees before
-        // submitting is what will actually be created.
+        // Submitting is what will actually be created.
         $mform->addElement('header', 'series', get_string('seriessection', 'mod_multicheckin'));
         $mform->addHelpButton('series', 'seriessection', 'mod_multicheckin');
 
@@ -161,19 +192,36 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         foreach (\mod_multicheckin\schedule_planner::weekday_options() as $day => $label) {
             $weekdaygroup[] = $mform->createElement('advcheckbox', "serieswd{$day}", '', $label, null, [0, $day]);
         }
-        $mform->addGroup($weekdaygroup, 'seriesweekdays',
-            get_string('series_weekdays', 'mod_multicheckin'), ' ', false);
+        $mform->addGroup(
+            $weekdaygroup,
+            'seriesweekdays',
+            get_string('series_weekdays', 'mod_multicheckin'),
+            ' ',
+            false
+        );
         $mform->addHelpButton('seriesweekdays', 'series_weekdays', 'mod_multicheckin');
-        $mform->hideIf('seriesweekdays', 'seriesrepeat', 'neq',
-            \mod_multicheckin\schedule_planner::REPEAT_WEEKLY);
+        $mform->hideIf(
+            'seriesweekdays',
+            'seriesrepeat',
+            'neq',
+            \mod_multicheckin\schedule_planner::REPEAT_WEEKLY
+        );
 
-        $mform->addElement('text', 'seriesinterval',
-            get_string('series_interval', 'mod_multicheckin'), ['size' => 6]);
+        $mform->addElement(
+            'text',
+            'seriesinterval',
+            get_string('series_interval', 'mod_multicheckin'),
+            ['size' => 6]
+        );
         $mform->setType('seriesinterval', PARAM_INT);
         $mform->setDefault('seriesinterval', 7);
         $mform->addHelpButton('seriesinterval', 'series_interval', 'mod_multicheckin');
-        $mform->hideIf('seriesinterval', 'seriesrepeat', 'neq',
-            \mod_multicheckin\schedule_planner::REPEAT_DAILY);
+        $mform->hideIf(
+            'seriesinterval',
+            'seriesrepeat',
+            'neq',
+            \mod_multicheckin\schedule_planner::REPEAT_DAILY
+        );
 
         // Dates, not a count: teachers know when term ends, and a date range is
         // self-correcting when a public holiday shifts the schedule.
@@ -189,23 +237,35 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             \mod_multicheckin\schedule_planner::REPEAT_CUSTOM,
         ];
 
-        $mform->addElement('date_selector', 'seriesdatefrom',
-            get_string('series_datefrom', 'mod_multicheckin'), ['optional' => false]);
+        $mform->addElement(
+            'date_selector',
+            'seriesdatefrom',
+            get_string('series_datefrom', 'mod_multicheckin'),
+            ['optional' => false]
+        );
         $mform->addHelpButton('seriesdatefrom', 'series_datefrom', 'mod_multicheckin');
         $mform->hideIf('seriesdatefrom', 'seriesrepeat', 'in', $sharedmodes);
 
-        $mform->addElement('date_selector', 'seriesdateto',
-            get_string('series_dateto', 'mod_multicheckin'), ['optional' => false]);
+        $mform->addElement(
+            'date_selector',
+            'seriesdateto',
+            get_string('series_dateto', 'mod_multicheckin'),
+            ['optional' => false]
+        );
         $mform->addHelpButton('seriesdateto', 'series_dateto', 'mod_multicheckin');
         $mform->hideIf('seriesdateto', 'seriesrepeat', 'in', $sharedmodes);
 
-        $mform->addElement('text', 'seriestimefrom',
-            get_string('series_timefrom', 'mod_multicheckin'), ['size' => 8]);
+        $mform->addElement(
+            'text',
+            'seriestimefrom',
+            get_string('series_timefrom', 'mod_multicheckin'),
+            ['size' => 8]
+        );
         $mform->setType('seriestimefrom', PARAM_TEXT);
         $mform->addHelpButton('seriestimefrom', 'series_timefrom', 'mod_multicheckin');
         $mform->hideIf('seriestimefrom', 'seriesrepeat', 'in', $sharedmodes);
 
-        // ---- Irregular series ('custom') ----
+        // Irregular series ('custom').
         //
         // The escape hatch the two rule-driven modes cannot provide: a real
         // timetable is not one clock time for the whole term. Rather than
@@ -219,7 +279,7 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // one place where the site's occurrence limit is visible to the
         // teacher. Rows beyond the chosen count are hidden by the form's own
         // dependency manager, and the reader on the save path trusts the count
-        // and nothing else.
+        // And nothing else.
         $maxsessions = \mod_multicheckin\schedule_planner::max_sessions();
 
         // A select is keyed by its option values, so the list is built with the
@@ -230,13 +290,21 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             $countoptions[$i] = $i;
         }
 
-        $mform->addElement('select', 'seriescustomcount',
-            get_string('series_customcount', 'mod_multicheckin'), $countoptions);
+        $mform->addElement(
+            'select',
+            'seriescustomcount',
+            get_string('series_customcount', 'mod_multicheckin'),
+            $countoptions
+        );
         $mform->setType('seriescustomcount', PARAM_INT);
         $mform->setDefault('seriescustomcount', \mod_multicheckin\schedule_planner::CUSTOM_DEFAULT_ROWS);
         $mform->addHelpButton('seriescustomcount', 'series_customcount', 'mod_multicheckin');
-        $mform->hideIf('seriescustomcount', 'seriesrepeat', 'neq',
-            \mod_multicheckin\schedule_planner::REPEAT_CUSTOM);
+        $mform->hideIf(
+            'seriescustomcount',
+            'seriesrepeat',
+            'neq',
+            \mod_multicheckin\schedule_planner::REPEAT_CUSTOM
+        );
 
         // One group per row, so the label, the two inputs and their help all
         // hide together. The placeholder carries the format - it is the only
@@ -246,12 +314,25 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $timeplaceholder = get_string('series_customtime_hint', 'mod_multicheckin');
         for ($k = 1; $k <= $maxsessions; $k++) {
             $row = [];
-            $row[] = $mform->createElement('text', "seriescd{$k}", '',
-                ['size' => 12, 'placeholder' => $dateplaceholder]);
-            $row[] = $mform->createElement('text', "seriesct{$k}", '',
-                ['size' => 8, 'placeholder' => $timeplaceholder]);
-            $mform->addGroup($row, "seriesrow{$k}",
-                get_string('series_customrow', 'mod_multicheckin', $k), ' ', false);
+            $row[] = $mform->createElement(
+                'text',
+                "seriescd{$k}",
+                '',
+                ['size' => 12, 'placeholder' => $dateplaceholder]
+            );
+            $row[] = $mform->createElement(
+                'text',
+                "seriesct{$k}",
+                '',
+                ['size' => 8, 'placeholder' => $timeplaceholder]
+            );
+            $mform->addGroup(
+                $row,
+                "seriesrow{$k}",
+                get_string('series_customrow', 'mod_multicheckin', $k),
+                ' ',
+                false
+            );
             $mform->setType("seriescd{$k}", PARAM_TEXT);
             $mform->setType("seriesct{$k}", PARAM_TEXT);
 
@@ -260,11 +341,19 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             // element and hides when any one of them applies, so the two
             // conditions are two hideIf() calls rather than a single special
             // case: 'mode is not custom', and 'this row is past the count'.
-            $mform->hideIf("seriesrow{$k}", 'seriesrepeat', 'neq',
-                \mod_multicheckin\schedule_planner::REPEAT_CUSTOM);
+            $mform->hideIf(
+                "seriesrow{$k}",
+                'seriesrepeat',
+                'neq',
+                \mod_multicheckin\schedule_planner::REPEAT_CUSTOM
+            );
             if ($k > 1) {
-                $mform->hideIf("seriesrow{$k}", 'seriescustomcount', 'in',
-                    implode('|', range(1, $k - 1)));
+                $mform->hideIf(
+                    "seriesrow{$k}",
+                    'seriescustomcount',
+                    'in',
+                    implode('|', range(1, $k - 1))
+                );
             }
         }
 
@@ -273,9 +362,16 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // its contents as the fields change. (Static elements escape their
         // value, which is why the classroom picker needed real selects - but
         // escaped text is exactly what this slot wants.)
-        $mform->addElement('static', 'seriespreview', '',
-            html_writer::div(get_string('series_preview_none', 'mod_multicheckin'),
-                'text-muted small', ['data-multicheckin-series' => 'preview']));
+        $mform->addElement(
+            'static',
+            'seriespreview',
+            '',
+            html_writer::div(
+                get_string('series_preview_none', 'mod_multicheckin'),
+                'text-muted small',
+                ['data-multicheckin-series' => 'preview']
+            )
+        );
 
         // Grade aggregation across occurrences.
         $mform->addElement('header', 'gradeaggregation', get_string('gradesection', 'mod_multicheckin'));
@@ -289,8 +385,12 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $mform->setDefault('gradeaggregate', 'all');
         $mform->addHelpButton('gradeaggregate', 'gradeaggregate', 'mod_multicheckin');
 
-        $mform->addElement('text', 'gradebestcount',
-            get_string('gradebestcount', 'mod_multicheckin'), ['size' => 6]);
+        $mform->addElement(
+            'text',
+            'gradebestcount',
+            get_string('gradebestcount', 'mod_multicheckin'),
+            ['size' => 6]
+        );
         $mform->setType('gradebestcount', PARAM_INT);
         $mform->setDefault('gradebestcount', 10);
         $mform->addHelpButton('gradebestcount', 'gradebestcount', 'mod_multicheckin');
@@ -299,8 +399,14 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // Self check-in.
         $mform->addElement('header', 'selfcheckin', get_string('selfcheckinsection', 'mod_multicheckin'));
 
-        $mform->addElement('advcheckbox', 'allowselfcheckin',
-            get_string('allowselfcheckin', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'allowselfcheckin',
+            get_string('allowselfcheckin', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         $mform->setDefault('allowselfcheckin', 1);
         $mform->addHelpButton('allowselfcheckin', 'allowselfcheckin', 'mod_multicheckin');
 
@@ -308,13 +414,23 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // only hides the button - the password route in checkin.php has never
         // looked at it. This one closes both, for every point, and cannot be
         // loosened from the point editor: ticking a box may only tighten.
-        $mform->addElement('advcheckbox', 'qronly',
-            get_string('qronly', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'qronly',
+            get_string('qronly', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         $mform->setDefault('qronly', 0);
         $mform->addHelpButton('qronly', 'qronly', 'mod_multicheckin');
 
-        $mform->addElement('text', 'selfcheckinpassword',
-            get_string('selfcheckinpassword', 'mod_multicheckin'), ['size' => 30]);
+        $mform->addElement(
+            'text',
+            'selfcheckinpassword',
+            get_string('selfcheckinpassword', 'mod_multicheckin'),
+            ['size' => 30]
+        );
         $mform->setType('selfcheckinpassword', PARAM_TEXT);
         $mform->addHelpButton('selfcheckinpassword', 'selfcheckinpassword', 'mod_multicheckin');
 
@@ -331,24 +447,36 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // participant, and including them would put a site-wide account on every
         // sheet in every course.
         $audienceoptions = \mod_multicheckin\audience_manager::get_role_options(self::form_context($this));
-        $mform->addElement('select', 'audience',
-            get_string('audience', 'mod_multicheckin'), $audienceoptions,
-            ['multiple' => 'multiple', 'size' => min(6, max(3, count($audienceoptions)))]);
+        $mform->addElement(
+            'select',
+            'audience',
+            get_string('audience', 'mod_multicheckin'),
+            $audienceoptions,
+            ['multiple' => 'multiple', 'size' => min(6, max(3, count($audienceoptions)))]
+        );
         $mform->getElement('audience')->setMultiple(true);
         $mform->setDefault('audience', [\mod_multicheckin\audience_manager::DEFAULT_ROLES]);
         $mform->addHelpButton('audience', 'audience', 'mod_multicheckin');
         $mform->setType('audience', PARAM_TEXT);
 
-        // ---- Geofence (anti-proxy) ----
+        // Geofence (anti-proxy).
         $mform->addElement('header', 'geofence', get_string('geosection', 'mod_multicheckin'));
 
-        $mform->addElement('select', 'geomode', get_string('geomode', 'mod_multicheckin'),
-            \mod_multicheckin\geo_manager::get_modes());
+        $mform->addElement(
+            'select',
+            'geomode',
+            get_string('geomode', 'mod_multicheckin'),
+            \mod_multicheckin\geo_manager::get_modes()
+        );
         $mform->setDefault('geomode', \mod_multicheckin\geo_manager::MODE_NONE);
         $mform->addHelpButton('geomode', 'geomode', 'mod_multicheckin');
 
-        $mform->addElement('textarea', 'geoipranges', get_string('geoipranges', 'mod_multicheckin'),
-            ['rows' => 4, 'cols' => 40]);
+        $mform->addElement(
+            'textarea',
+            'geoipranges',
+            get_string('geoipranges', 'mod_multicheckin'),
+            ['rows' => 4, 'cols' => 40]
+        );
         $mform->setType('geoipranges', PARAM_TEXT);
         $mform->addHelpButton('geoipranges', 'geoipranges', 'mod_multicheckin');
         $mform->hideIf('geoipranges', 'geomode', 'in', ['none', 'gps']);
@@ -380,8 +508,12 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             ];
         }
 
-        $mform->addElement('select', 'savedplace',
-            get_string('placesection', 'mod_multicheckin'), $placeoptions);
+        $mform->addElement(
+            'select',
+            'savedplace',
+            get_string('placesection', 'mod_multicheckin'),
+            $placeoptions
+        );
         $mform->setType('savedplace', PARAM_INT);
         $mform->addHelpButton('savedplace', 'placesection', 'mod_multicheckin');
         $mform->hideIf('savedplace', 'geomode', 'in', ['none', 'ip']);
@@ -427,8 +559,12 @@ class mod_multicheckin_mod_form extends moodleform_mod {
                 ];
             }
 
-            $mform->addElement('select', 'sharedplace',
-                get_string('sharedplaceselect', 'mod_multicheckin'), $options);
+            $mform->addElement(
+                'select',
+                'sharedplace',
+                get_string('sharedplaceselect', 'mod_multicheckin'),
+                $options
+            );
             $mform->setType('sharedplace', PARAM_INT);
             $mform->addHelpButton('sharedplace', 'sharedplaceselect', 'mod_multicheckin');
             $mform->hideIf('sharedplace', 'geomode', 'in', ['none', 'ip']);
@@ -437,9 +573,15 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             $mform->setType('sharedplacedata', PARAM_RAW);
             $mform->hideIf('sharedplacedata', 'geomode', 'in', ['none', 'ip']);
 
-            $mform->addElement('static', 'sharedplacehint', '',
-                html_writer::div(get_string('sharedplacehint', 'mod_multicheckin'),
-                    'small text-muted'));
+            $mform->addElement(
+                'static',
+                'sharedplacehint',
+                '',
+                html_writer::div(
+                    get_string('sharedplacehint', 'mod_multicheckin'),
+                    'small text-muted'
+                )
+            );
             $mform->hideIf('sharedplacehint', 'geomode', 'in', ['none', 'ip']);
         } else if (!class_exists('\availability_gpsloc\place_manager')) {
             // The library is unavailable because the geolocation plugin is not
@@ -447,9 +589,15 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             // wonder why the dropdown other sites show is missing here. When
             // the plugin is present but its library is simply empty the notice
             // is wrong, hence the class_exists test rather than a bare else.
-            $mform->addElement('static', 'sharedplacemissing', '',
-                html_writer::div(get_string('sharedplaceunavailable', 'mod_multicheckin'),
-                    'small text-muted'));
+            $mform->addElement(
+                'static',
+                'sharedplacemissing',
+                '',
+                html_writer::div(
+                    get_string('sharedplaceunavailable', 'mod_multicheckin'),
+                    'small text-muted'
+                )
+            );
             $mform->hideIf('sharedplacemissing', 'geomode', 'in', ['none', 'ip']);
         }
 
@@ -458,22 +606,34 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // underneath, and the natural width of the label column is narrow;
         // a long label such as "教室纬度" was clipped to "里纬度" by the
         // overflow rule. Setting an explicit width gives the label room.
-        $mform->addElement('text', 'geolat', get_string('geolat', 'mod_multicheckin'),
-            ['size' => 16, 'style' => 'width:18rem']);
+        $mform->addElement(
+            'text',
+            'geolat',
+            get_string('geolat', 'mod_multicheckin'),
+            ['size' => 16, 'style' => 'width:18rem']
+        );
         $mform->setType('geolat', PARAM_RAW_TRIMMED);
         $mform->setDefault('geolat', 0);
         $mform->addHelpButton('geolat', 'geolat', 'mod_multicheckin');
         $mform->hideIf('geolat', 'geomode', 'in', ['none', 'ip']);
 
-        $mform->addElement('text', 'geolng', get_string('geolng', 'mod_multicheckin'),
-            ['size' => 16, 'style' => 'width:18rem']);
+        $mform->addElement(
+            'text',
+            'geolng',
+            get_string('geolng', 'mod_multicheckin'),
+            ['size' => 16, 'style' => 'width:18rem']
+        );
         $mform->setType('geolng', PARAM_RAW_TRIMMED);
         $mform->setDefault('geolng', 0);
         $mform->addHelpButton('geolng', 'geolng', 'mod_multicheckin');
         $mform->hideIf('geolng', 'geomode', 'in', ['none', 'ip']);
 
-        $mform->addElement('text', 'georadius', get_string('georadius', 'mod_multicheckin'),
-            ['size' => 8, 'style' => 'width:18rem']);
+        $mform->addElement(
+            'text',
+            'georadius',
+            get_string('georadius', 'mod_multicheckin'),
+            ['size' => 8, 'style' => 'width:18rem']
+        );
         $mform->setType('georadius', PARAM_INT);
         $mform->setDefault('georadius', 100);
         $mform->addHelpButton('georadius', 'georadius', 'mod_multicheckin');
@@ -484,8 +644,14 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // and should not quietly bypass the fence. Unticking it restores the
         // old behaviour for a room where projecting the code is itself the
         // proof. Existing activities keep whatever they already store.
-        $mform->addElement('advcheckbox', 'geoenforceqr',
-            get_string('geoenforceqr', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'geoenforceqr',
+            get_string('geoenforceqr', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         $mform->setDefault('geoenforceqr', 1);
         $mform->addHelpButton('geoenforceqr', 'geoenforceqr', 'mod_multicheckin');
         $mform->hideIf('geoenforceqr', 'geomode', 'eq', 'none');
@@ -496,13 +662,19 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // lesson. The page itself stays reachable by direct URL for anyone who
         // may manage the activity, so switching this on is a convenience, not a
         // permission gate.
-        $mform->addElement('advcheckbox', 'showgeoaudit',
-            get_string('showgeoaudit', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'showgeoaudit',
+            get_string('showgeoaudit', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         $mform->setDefault('showgeoaudit', 0);
         $mform->addHelpButton('showgeoaudit', 'showgeoaudit', 'mod_multicheckin');
         $mform->hideIf('showgeoaudit', 'geomode', 'eq', 'none');
 
-        // ---- QR token rotation ----
+        // QR token rotation.
         $mform->addElement('header', 'qroptions', get_string('qrsection', 'mod_multicheckin'));
 
         $mform->addElement('text', 'qrrotation', get_string('qrrotation', 'mod_multicheckin'), ['size' => 8]);
@@ -514,8 +686,14 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // Reminders.
         $mform->addElement('header', 'notify', get_string('notifysection', 'mod_multicheckin'));
 
-        $mform->addElement('advcheckbox', 'notifyenabled',
-            get_string('notifyenabled', 'mod_multicheckin'), null, null, [0, 1]);
+        $mform->addElement(
+            'advcheckbox',
+            'notifyenabled',
+            get_string('notifyenabled', 'mod_multicheckin'),
+            null,
+            null,
+            [0, 1]
+        );
         // Off by default. A check-in activity that starts mailing the whole
         // class the moment it is created is a surprise, and the surprise lands
         // on students rather than on the teacher who could undo it. The teacher
@@ -523,8 +701,12 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $mform->setDefault('notifyenabled', 0);
         $mform->addHelpButton('notifyenabled', 'notifyenabled', 'mod_multicheckin');
 
-        $mform->addElement('text', 'notifyleadtime',
-            get_string('notifyleadtime', 'mod_multicheckin'), ['size' => 8]);
+        $mform->addElement(
+            'text',
+            'notifyleadtime',
+            get_string('notifyleadtime', 'mod_multicheckin'),
+            ['size' => 8]
+        );
         $mform->setType('notifyleadtime', PARAM_INT);
         $mform->setDefault('notifyleadtime', 300);
         $mform->addHelpButton('notifyleadtime', 'notifyleadtime', 'mod_multicheckin');
@@ -546,9 +728,9 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // Grade.
         $this->standard_grading_coursemodule_elements();
 
-        // ---- Status point values ----
+        // Status point values.
         // Raw points per final status; the gradebook grade is the earned value
-        // divided by the largest configured one, times the max grade above.
+        // Divided by the largest configured one, times the max grade above.
         $statusfields = [
             'pointspresent' => 2,
             'pointslate' => 1,
@@ -657,7 +839,8 @@ class mod_multicheckin_mod_form extends moodleform_mod {
 
         $hint = html_writer::div(
             get_string('place_pickerhint', 'mod_multicheckin'),
-            'small text-muted mt-1');
+            'small text-muted mt-1'
+        );
 
         // The library is site-wide, so its management page is one click away
         // from wherever a teacher is already thinking about classrooms. It
@@ -667,13 +850,18 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         $caneditplaces = class_exists('\\mod_multicheckin\\place_manager')
             && \mod_multicheckin\place_manager::can_edit();
         if ($caneditplaces) {
-            $manageurl = new moodle_url('/mod/multicheckin/places.php',
-                ['returnurl' => qualified_me()]);
+            $manageurl = new moodle_url(
+                '/mod/multicheckin/places.php',
+                ['returnurl' => qualified_me()]
+            );
             $hint .= html_writer::div(
-                html_writer::link($manageurl,
+                html_writer::link(
+                    $manageurl,
                     get_string('place_manage', 'mod_multicheckin'),
-                    ['class' => 'small']),
-                'mt-1');
+                    ['class' => 'small']
+                ),
+                'mt-1'
+            );
         }
 
         return html_writer::div(
@@ -825,15 +1013,20 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // manage page afterwards.
         global $DB;
         if (!empty($defaultvalues['id'])) {
-            $mids = array_values($DB->get_records('multicheckin_point',
-                ['sessionid' => $defaultvalues['id'], 'role' => 'mid'], 'sortorder ASC'));
+            $mids = array_values($DB->get_records(
+                'multicheckin_point',
+                ['sessionid' => $defaultvalues['id'], 'role' => 'mid'],
+                'sortorder ASC'
+            ));
             $defaultvalues['midcount'] = count($mids);
             foreach ($mids as $i => $p) {
                 $defaultvalues['midopen' . ($i + 1)] = (int) round($p->openoffset / 60);
             }
             if ($mids) {
-                $defaultvalues['midwindow'] = max(1,
-                    (int) round(((int) $mids[0]->closeoffset - (int) $mids[0]->openoffset) / 60));
+                $defaultvalues['midwindow'] = max(
+                    1,
+                    (int) round(((int) $mids[0]->closeoffset - (int) $mids[0]->openoffset) / 60)
+                );
             }
         } else {
             // A new instance: sign in and sign out only. A mid roll call is a
@@ -865,20 +1058,27 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         // QR rotation must stay inside the supported range.
         if (isset($data['qrrotation']) && $data['qrrotation'] !== '') {
             $rot = (int) $data['qrrotation'];
-            if ($rot < \mod_multicheckin\qr_manager::ROTATION_MIN
-                    || $rot > \mod_multicheckin\qr_manager::ROTATION_MAX) {
-                $errors['qrrotation'] = get_string('qrrotation_range', 'mod_multicheckin',
+            if (
+                $rot < \mod_multicheckin\qr_manager::ROTATION_MIN
+                    || $rot > \mod_multicheckin\qr_manager::ROTATION_MAX
+            ) {
+                $errors['qrrotation'] = get_string(
+                    'qrrotation_range',
+                    'mod_multicheckin',
                     (object) [
                         'min' => \mod_multicheckin\qr_manager::ROTATION_MIN,
                         'max' => \mod_multicheckin\qr_manager::ROTATION_MAX,
-                    ]);
+                    ]
+                );
             }
         }
 
         // Validate every IP range line when an IP fence is enabled.
         $mode = $data['geomode'] ?? \mod_multicheckin\geo_manager::MODE_NONE;
-        if ($mode === \mod_multicheckin\geo_manager::MODE_IP
-                || $mode === \mod_multicheckin\geo_manager::MODE_BOTH) {
+        if (
+            $mode === \mod_multicheckin\geo_manager::MODE_IP
+                || $mode === \mod_multicheckin\geo_manager::MODE_BOTH
+        ) {
             $raw = (string) ($data['geoipranges'] ?? '');
             foreach (preg_split('/\R/', $raw) as $line) {
                 $line = trim($line);
@@ -893,8 +1093,10 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         }
 
         // GPS fence needs a sane centre and radius.
-        if ($mode === \mod_multicheckin\geo_manager::MODE_GPS
-                || $mode === \mod_multicheckin\geo_manager::MODE_BOTH) {
+        if (
+            $mode === \mod_multicheckin\geo_manager::MODE_GPS
+                || $mode === \mod_multicheckin\geo_manager::MODE_BOTH
+        ) {
             $lat = (float) ($data['geolat'] ?? 0);
             $lng = (float) ($data['geolng'] ?? 0);
             if (($lat == 0.0 && $lng == 0.0) || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
@@ -927,8 +1129,10 @@ class mod_multicheckin_mod_form extends moodleform_mod {
         }
 
         // Status point values must be sane non-negative numbers.
-        foreach (['pointspresent', 'pointslate', 'pointsearly', 'pointslateearly',
-                'pointsabsent', 'pointsleave'] as $sfield) {
+        foreach (
+            ['pointspresent', 'pointslate', 'pointsearly', 'pointslateearly',
+                'pointsabsent', 'pointsleave'] as $sfield
+        ) {
             if (isset($data[$sfield]) && $data[$sfield] !== '') {
                 $sval = (float) $data[$sfield];
                 if ($sval < 0 || $sval > 1000) {
@@ -949,8 +1153,11 @@ class mod_multicheckin_mod_form extends moodleform_mod {
             $max = \mod_multicheckin\schedule_planner::max_sessions();
             $count = (int) ($data['seriescustomcount'] ?? 0);
             if ($count < 1 || $count > $max) {
-                $errors['seriescustomcount'] = get_string('series_customcount_invalid',
-                    'mod_multicheckin', $max);
+                $errors['seriescustomcount'] = get_string(
+                    'series_customcount_invalid',
+                    'mod_multicheckin',
+                    $max
+                );
             }
             $count = max(0, min($count, $max));
 
@@ -968,10 +1175,15 @@ class mod_multicheckin_mod_form extends moodleform_mod {
                 // The error is keyed by the row's group, because that is the
                 // element the form can draw an error against - a group's
                 // sub-fields are not elements in their own right.
-                if ($rowdate === ''
-                        || \mod_multicheckin\schedule_planner::parse_custom_row($rowdate, $rowtime) === null) {
-                    $errors["seriesrow{$k}"] = get_string('series_customrow_invalid',
-                        'mod_multicheckin', $k);
+                if (
+                    $rowdate === ''
+                        || \mod_multicheckin\schedule_planner::parse_custom_row($rowdate, $rowtime) === null
+                ) {
+                    $errors["seriesrow{$k}"] = get_string(
+                        'series_customrow_invalid',
+                        'mod_multicheckin',
+                        $k
+                    );
                     continue;
                 }
 

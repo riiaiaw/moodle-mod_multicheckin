@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Sends "remember to check in" reminders for check-in points.
  *
@@ -55,7 +53,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class notify_manager {
-
     /** @var string Message provider component name. */
     public const PROVIDER = 'nextcheckin_reminder';
 
@@ -131,13 +128,21 @@ class notify_manager {
         // widened by the largest lead time allowed; due_state() then judges
         // each point exactly. Narrowing it here instead would silently drop the
         // sign-in reminder of every class, whose first point opens at T0.
-        $sessions = $DB->get_records_select('multicheckin',
+        $sessions = $DB->get_records_select(
+            'multicheckin',
             'notifyenabled = 1 AND timestart <= :nowplus AND timeend >= :now',
-            ['nowplus' => $now + self::MAX_LEADTIME, 'now' => $now], '', self::SESSION_FIELDS);
+            ['nowplus' => $now + self::MAX_LEADTIME, 'now' => $now],
+            '',
+            self::SESSION_FIELDS
+        );
 
         foreach ($sessions as $session) {
-            $points = array_values($DB->get_records('multicheckin_point',
-                ['sessionid' => $session->id], 'sortorder ASC', self::POINT_FIELDS));
+            $points = array_values($DB->get_records(
+                'multicheckin_point',
+                ['sessionid' => $session->id],
+                'sortorder ASC',
+                self::POINT_FIELDS
+            ));
             if (!$points) {
                 continue;
             }
@@ -166,7 +171,7 @@ class notify_manager {
                 if ($state === null) {
                     continue;
                 }
-                // "Only the first point reminds" is the whole of that rule.
+                // The "only the first point reminds" rule is the whole of it.
                 if ($rule === self::RULE_FIRST && $index > 0) {
                     continue;
                 }
@@ -176,8 +181,13 @@ class notify_manager {
                     $audience = self::audience($session, $shared);
                 }
 
-                $candidates = self::candidates($session, $points, $index, $rule,
-                    $needsroster ? $audience : []);
+                $candidates = self::candidates(
+                    $session,
+                    $points,
+                    $index,
+                    $rule,
+                    $needsroster ? $audience : []
+                );
                 $sent += self::remind($session, $point, $candidates, $state, $now, $shared);
             }
         }
@@ -262,8 +272,13 @@ class notify_manager {
      * @param array $audience Class list (userid => true).
      * @return array userid => true.
      */
-    public static function candidates(\stdClass $session, array $points, int $index,
-            string $rule, array $audience): array {
+    public static function candidates(
+        \stdClass $session,
+        array $points,
+        int $index,
+        string $rule,
+        array $audience
+    ): array {
 
         if ($rule === self::RULE_CHAIN && $index > 0) {
             // The chain: only students who got through the previous point are
@@ -319,8 +334,13 @@ class notify_manager {
      */
     protected static function shared_context(\stdClass $session): \stdClass {
         return (object) [
-            'cm' => get_coursemodule_from_instance('multicheckin', (int) $session->id,
-                $session->course, false, IGNORE_MISSING),
+            'cm' => get_coursemodule_from_instance(
+                'multicheckin',
+                (int) $session->id,
+                $session->course,
+                false,
+                IGNORE_MISSING
+            ),
             'coursename' => self::course_name($session),
             'leaves' => leave_manager::for_session((int) $session->id),
         ];
@@ -342,8 +362,12 @@ class notify_manager {
 
         // Only the one column, through the (pointid, userid) index: this runs
         // once per point of every occurrence in progress.
-        $rows = $DB->get_records('multicheckin_log',
-            ['sessionid' => (int) $session->id, 'pointid' => $pointid], '', 'userid');
+        $rows = $DB->get_records(
+            'multicheckin_log',
+            ['sessionid' => (int) $session->id, 'pointid' => $pointid],
+            '',
+            'userid'
+        );
 
         $out = [];
         foreach ($rows as $row) {
@@ -369,8 +393,12 @@ class notify_manager {
         global $DB;
 
         // One column, through the (sessionid, pointid, userid) unique index.
-        $rows = $DB->get_records('multicheckin_notify',
-            ['sessionid' => (int) $session->id, 'pointid' => $pointid], '', 'userid');
+        $rows = $DB->get_records(
+            'multicheckin_notify',
+            ['sessionid' => (int) $session->id, 'pointid' => $pointid],
+            '',
+            'userid'
+        );
 
         $out = [];
         foreach ($rows as $row) {
@@ -402,8 +430,14 @@ class notify_manager {
      * @param \stdClass|null $shared Occurrence context already resolved by the caller.
      * @return int Number sent.
      */
-    protected static function remind(\stdClass $session, \stdClass $point, array $candidates,
-            string $state, int $now, ?\stdClass $shared = null): int {
+    protected static function remind(
+        \stdClass $session,
+        \stdClass $point,
+        array $candidates,
+        string $state,
+        int $now,
+        ?\stdClass $shared = null
+    ): int {
         global $DB;
 
         if (!$candidates) {
@@ -436,8 +470,16 @@ class notify_manager {
                 continue;
             }
 
-            if (self::send_message($session, $point, $userid, $state, $batch,
-                    $timezones[$userid] ?? '')) {
+            if (
+                self::send_message(
+                    $session,
+                    $point,
+                    $userid,
+                    $state,
+                    $batch,
+                    $timezones[$userid] ?? ''
+                )
+            ) {
                 $DB->insert_record('multicheckin_notify', (object) [
                     'sessionid' => (int) $session->id,
                     'pointid' => (int) $point->id,
@@ -459,8 +501,11 @@ class notify_manager {
      * @param \stdClass $point Point record.
      * @return \stdClass With cm, coursename, activityname and pointname.
      */
-    protected static function batch_context(\stdClass $shared, \stdClass $session,
-            \stdClass $point): \stdClass {
+    protected static function batch_context(
+        \stdClass $shared,
+        \stdClass $session,
+        \stdClass $point
+    ): \stdClass {
         return (object) [
             'cm' => $shared->cm,
             'coursename' => $shared->coursename,
@@ -496,8 +541,14 @@ class notify_manager {
      * @param string $rawtimezone The recipient's timezone field, as stored.
      * @return bool True if dispatched.
      */
-    protected static function send_message(\stdClass $session, \stdClass $point, int $userid,
-            string $state, \stdClass $batch, string $rawtimezone = ''): bool {
+    protected static function send_message(
+        \stdClass $session,
+        \stdClass $point,
+        int $userid,
+        string $state,
+        \stdClass $batch,
+        string $rawtimezone = ''
+    ): bool {
         $activityname = $batch->activityname;
         $pointname = $batch->pointname;
         $cm = $batch->cm;
@@ -543,8 +594,10 @@ class notify_manager {
         ];
         $soon = ($state === self::STATE_SOON);
         if ($url !== '') {
-            $bodydata->link = \html_writer::link($url,
-                get_string('msg_reminder_linktext', 'mod_multicheckin'));
+            $bodydata->link = \html_writer::link(
+                $url,
+                get_string('msg_reminder_linktext', 'mod_multicheckin')
+            );
             // A QR-only point has no button on the page this link opens, so the
             // paragraph says what to do instead of promising something the page
             // does not offer - the same failure as a link that points at a page

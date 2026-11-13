@@ -36,6 +36,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -77,15 +78,19 @@ $PAGE->set_title(get_string('place_managetitle', 'mod_multicheckin'));
 $PAGE->set_heading(get_string('place_managetitle', 'mod_multicheckin'));
 $PAGE->set_pagelayout('admin');
 
-// ---- Deletion ------------------------------------------------------------
+// Deletion.
 // Confirm-then-delete, because the library is shared and an accidental click
 // would remove a room other teachers rely on. Nothing is lost from existing
-// activities either way, but the room disappears from everyone's dropdown.
+// Activities either way, but the room disappears from everyone's dropdown.
 if ($action === 'delete' && $placeid > 0) {
     $place = place_manager::get($placeid);
     if ($place === null) {
-        redirect($pageurl, get_string('placenotfound', 'mod_multicheckin'),
-            null, \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $pageurl,
+            get_string('placenotfound', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 
     if ($confirm && confirm_sesskey()) {
@@ -115,7 +120,7 @@ if ($action === 'delete' && $placeid > 0) {
     exit;
 }
 
-// ---- Add / edit ----------------------------------------------------------
+// Add / edit.
 /**
  * Form for creating or editing one saved classroom location.
  *
@@ -124,7 +129,6 @@ if ($action === 'delete' && $placeid > 0) {
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_multicheckin_place_form extends moodleform {
-
     /**
      * Form definition.
      *
@@ -137,14 +141,22 @@ class mod_multicheckin_place_form extends moodleform {
         $mform->addElement('hidden', 'placeid', $place->id ?? 0);
         $mform->setType('placeid', PARAM_INT);
 
-        $mform->addElement('text', 'name', get_string('placename', 'mod_multicheckin'),
-            ['size' => 48, 'maxlength' => place_manager::NAME_MAX]);
+        $mform->addElement(
+            'text',
+            'name',
+            get_string('placename', 'mod_multicheckin'),
+            ['size' => 48, 'maxlength' => place_manager::NAME_MAX]
+        );
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addHelpButton('name', 'placename', 'mod_multicheckin');
 
-        $mform->addElement('textarea', 'description',
-            get_string('placedescription', 'mod_multicheckin'), ['rows' => 2, 'cols' => 48]);
+        $mform->addElement(
+            'textarea',
+            'description',
+            get_string('placedescription', 'mod_multicheckin'),
+            ['rows' => 2, 'cols' => 48]
+        );
         $mform->setType('description', PARAM_TEXT);
         $mform->addHelpButton('description', 'placedescription', 'mod_multicheckin');
 
@@ -157,21 +169,34 @@ class mod_multicheckin_place_form extends moodleform {
             . html_writer::div('', '', [
                 'id' => 'multicheckin-placemap',
                 'style' => 'height:320px;width:100%;border:1px solid #dee2e6;border-radius:4px;',
-            ])));
+            ])
+        ));
 
-        $mform->addElement('text', 'latitude', get_string('placelatitude', 'mod_multicheckin'),
-            ['size' => 20]);
+        $mform->addElement(
+            'text',
+            'latitude',
+            get_string('placelatitude', 'mod_multicheckin'),
+            ['size' => 20]
+        );
         $mform->setType('latitude', PARAM_RAW_TRIMMED);
         $mform->addRule('latitude', null, 'required', null, 'client');
         $mform->addHelpButton('latitude', 'placelatitude', 'mod_multicheckin');
 
-        $mform->addElement('text', 'longitude', get_string('placelongitude', 'mod_multicheckin'),
-            ['size' => 20]);
+        $mform->addElement(
+            'text',
+            'longitude',
+            get_string('placelongitude', 'mod_multicheckin'),
+            ['size' => 20]
+        );
         $mform->setType('longitude', PARAM_RAW_TRIMMED);
         $mform->addRule('longitude', null, 'required', null, 'client');
 
-        $mform->addElement('text', 'defaultradius',
-            get_string('placedefaultradius', 'mod_multicheckin'), ['size' => 8]);
+        $mform->addElement(
+            'text',
+            'defaultradius',
+            get_string('placedefaultradius', 'mod_multicheckin'),
+            ['size' => 8]
+        );
         $mform->setType('defaultradius', PARAM_INT);
         $mform->setDefault('defaultradius', place_manager::RADIUS_DEFAULT);
         $mform->addHelpButton('defaultradius', 'placedefaultradius', 'mod_multicheckin');
@@ -223,7 +248,7 @@ if ($form->is_cancelled()) {
     redirect($pageurl);
 }
 
-// ---- Save ----------------------------------------------------------------
+// Save.
 if ($data = $form->get_data()) {
     require_sesskey();
 
@@ -242,8 +267,11 @@ if ($data = $form->get_data()) {
     $duplicate = place_manager::get_by_name($payload['name']);
     $dupenotice = '';
     if ($duplicate !== null && (int) $duplicate->id !== (int) ($data->placeid ?? 0)) {
-        $dupenotice = ' ' . get_string('place_duplicatewarning', 'mod_multicheckin',
-            format_string($duplicate->name));
+        $dupenotice = ' ' . get_string(
+            'place_duplicatewarning',
+            'mod_multicheckin',
+            format_string($duplicate->name)
+        );
     }
 
     try {
@@ -256,18 +284,24 @@ if ($data = $form->get_data()) {
         }
         redirect($pageurl, $message, null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (\invalid_parameter_exception $e) {
-        // validation() already covers this path; reaching here means the data
-        // changed between validation and save, which is worth surfacing.
-        redirect($formurl, place_manager::error_string($e->getMessage()),
-            null, \core\output\notification::NOTIFY_ERROR);
+        // Validation() already covers this path; reaching here means the data.
+        // Changed between validation and save, which is worth surfacing.
+        redirect(
+            $formurl,
+            place_manager::error_string($e->getMessage()),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 }
 
-// ---- Page ----------------------------------------------------------------
+// Page.
 echo $OUTPUT->header();
 
-echo html_writer::div(get_string('place_managedesc', 'mod_multicheckin'),
-    'alert alert-info');
+echo html_writer::div(
+    get_string('place_managedesc', 'mod_multicheckin'),
+    'alert alert-info'
+);
 
 if ($action === 'add' || $action === 'edit') {
     echo html_writer::tag('h3', $action === 'edit'
@@ -285,8 +319,11 @@ if ($action === 'add' || $action === 'edit') {
         $PAGE->requires->js_call_amd('mod_multicheckin/placemap', 'init', [$mapcfg]);
     }
 
-    echo html_writer::link($backurl, get_string('place_backtolist', 'mod_multicheckin'),
-        ['class' => 'btn btn-link']);
+    echo html_writer::link(
+        $backurl,
+        get_string('place_backtolist', 'mod_multicheckin'),
+        ['class' => 'btn btn-link']
+    );
     echo $OUTPUT->footer();
     exit;
 }
@@ -294,8 +331,11 @@ if ($action === 'add' || $action === 'edit') {
 // Toolbar.
 $addurl = new moodle_url($pageurl, ['action' => 'add']);
 echo html_writer::div(
-    html_writer::link($addurl, get_string('place_add', 'mod_multicheckin'),
-        ['class' => 'btn btn-primary mb-3']),
+    html_writer::link(
+        $addurl,
+        get_string('place_add', 'mod_multicheckin'),
+        ['class' => 'btn btn-primary mb-3']
+    ),
     ''
 );
 
@@ -326,14 +366,18 @@ foreach ($places as $place) {
 
     $name = format_string($place->name);
     if (trim((string) $place->description) !== '') {
-        $name .= html_writer::div(format_text($place->description, FORMAT_PLAIN),
-            'small text-muted');
+        $name .= html_writer::div(
+            format_text($place->description, FORMAT_PLAIN),
+            'small text-muted'
+        );
     }
 
     $usage = place_manager::usage_count($place);
     $usagetext = $usage > 0
-        ? html_writer::span(get_string('placeusecount', 'mod_multicheckin', $usage),
-            'badge bg-secondary')
+        ? html_writer::span(
+            get_string('placeusecount', 'mod_multicheckin', $usage),
+            'badge bg-secondary'
+        )
         : html_writer::span(get_string('placeusezero', 'mod_multicheckin'), 'text-muted');
 
     $modified = $place->timemodified > 0
@@ -356,7 +400,9 @@ foreach ($places as $place) {
 
 echo html_writer::table($table);
 
-echo html_writer::div(get_string('place_deletenote', 'mod_multicheckin'),
-    'small text-muted mt-2');
+echo html_writer::div(
+    get_string('place_deletenote', 'mod_multicheckin'),
+    'small text-muted mt-2'
+);
 
 echo $OUTPUT->footer();

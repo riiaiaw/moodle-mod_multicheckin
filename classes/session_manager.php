@@ -16,19 +16,7 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
-// Both classes live in this namespace and would normally be autoloaded, but
-// session_manager is also reached from pages opened directly by URL and from
-// lib.php early in the request, where the component's autoloader is not always
-// primed yet. Requiring it here keeps the series methods usable everywhere.
-//
-// photo_manager is pulled in for the same reason: deleting a session (or one of
-// its points) has to take that point's photos with it, and those delete paths
-// run from the same early/URL-direct contexts that schedule_planner does.
-require_once(__DIR__ . '/schedule_planner.php');
-require_once(__DIR__ . '/photo_manager.php');
-
+// Both classes live in this namespace and would normally be autoloaded, but.
 /**
  * Session (occurrence) and check-in point management helpers.
  *
@@ -37,7 +25,6 @@ require_once(__DIR__ . '/photo_manager.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class session_manager {
-
     /** @var int Hard upper bound for the number of mid-session check-ins. */
     public const MID_MAX = 10;
 
@@ -206,8 +193,11 @@ class session_manager {
 
         $session = $DB->get_record('multicheckin', ['id' => $sessionid], '*', MUST_EXIST);
         $duration = max(600, (int) $session->timeend - (int) $session->timestart);
-        $mids = array_values($DB->get_records('multicheckin_point',
-            ['sessionid' => $sessionid, 'role' => 'mid'], 'sortorder ASC'));
+        $mids = array_values($DB->get_records(
+            'multicheckin_point',
+            ['sessionid' => $sessionid, 'role' => 'mid'],
+            'sortorder ASC'
+        ));
 
         $stats = ['added' => [], 'removed' => 0, 'kept' => 0];
         $touched = false;
@@ -242,8 +232,10 @@ class session_manager {
         // itself created, whichever part of the range it sits in.
         for ($i = $keep; $i < count($mids); $i++) {
             $point = $mids[$i];
-            if ($DB->record_exists('multicheckin_log', ['pointid' => $point->id])
-                    || !point_name::is_default((string) $point->name)) {
+            if (
+                $DB->record_exists('multicheckin_log', ['pointid' => $point->id])
+                    || !point_name::is_default((string) $point->name)
+            ) {
                 $stats['kept']++;
                 continue;
             }
@@ -316,8 +308,13 @@ class session_manager {
         }
 
         $template = $DB->get_record('multicheckin', ['id' => $templateid], '*', MUST_EXIST);
-        $cm = get_coursemodule_from_instance('multicheckin', (int) $templateid, (int) $template->course,
-            false, IGNORE_MISSING);
+        $cm = get_coursemodule_from_instance(
+            'multicheckin',
+            (int) $templateid,
+            (int) $template->course,
+            false,
+            IGNORE_MISSING
+        );
         if (!$cm) {
             return $stats;
         }
@@ -546,25 +543,27 @@ class session_manager {
             return;
         }
 
-        list($insql, $params) = $DB->get_in_or_equal(array_keys($sessions));
-        foreach ([
+        [$insql, $params] = $DB->get_in_or_equal(array_keys($sessions));
+        foreach (
+            [
             'multicheckin_photoreq',
             'multicheckin_pass',
             'multicheckin_geo_log',
             'multicheckin_log',
             'multicheckin_result',
-        ] as $table) {
+            ] as $table
+        ) {
             $DB->delete_records_select($table, "sessionid {$insql}", $params);
         }
     }
 
-    // ---- Occurrence series -------------------------------------------------
+    // Occurrence series.
     //
     // An activity has one configuration template (the row cm->instance points
     // at, parentid = 0) and zero or more occurrences below it (parentid =
     // template id). When there are no occurrences the template is treated as
     // the single session, which is how every activity behaved before series
-    // existed - so an untouched or upgraded activity keeps working.
+    // Existed - so an untouched or upgraded activity keeps working.
 
     /**
      * Build a repeat specification from submitted form data.
@@ -1051,8 +1050,10 @@ class session_manager {
             $record = (object) ['id' => (int) $occurrence->id, 'timemodified' => time()];
             $changed = false;
             foreach ($shared as $field) {
-                if (property_exists($template, $field)
-                        && (string) ($occurrence->$field ?? '') !== (string) ($template->$field ?? '')) {
+                if (
+                    property_exists($template, $field)
+                        && (string) ($occurrence->$field ?? '') !== (string) ($template->$field ?? '')
+                ) {
                     $record->$field = $template->$field;
                     $changed = true;
                 }

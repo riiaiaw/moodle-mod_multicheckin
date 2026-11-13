@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Plan a series of attendance occurrences from a repeat rule.
  *
@@ -48,7 +46,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class schedule_planner {
-
     /** @var string Repeat mode: create no extra occurrences. */
     public const REPEAT_NONE = 'none';
     /** @var string Repeat mode: one occurrence per selected weekday each week. */

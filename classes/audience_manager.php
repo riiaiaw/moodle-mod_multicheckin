@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Decides who counts as a participant of an activity.
  *
@@ -39,7 +37,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class audience_manager {
-
     /** @var string Default audience: students only. */
     public const DEFAULT_ROLES = 'student';
 
@@ -66,14 +63,14 @@ class audience_manager {
     public static function get_role_options(\context $context): array {
         $options = [];
 
-        // get_all_roles() yields the role records themselves. role_get_names()
+        // Get_all_roles() yields the role records themselves. role_get_names().
         // would also work but its third parameter means "return id => localised
         // name", and passing true there hands back strings - which then blow up
         // inside role_get_name(), whose first parameter is typed stdClass.
         // Asking for the records directly makes the intent unambiguous.
         //
         // In a course context get_all_roles() also attaches coursealias, so a
-        // role renamed for this course shows the name the teacher sees.
+        // Role renamed for this course shows the name the teacher sees.
         $roles = get_all_roles($context);
         foreach ($roles as $role) {
             if ($role->shortname === 'manager') {
@@ -216,7 +213,7 @@ class audience_manager {
         // Resolve the shortnames to ids. A shortname that does not exist on
         // this site is dropped, so a stale stored value cannot make the query
         // return nothing at all.
-        list($insql, $params) = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'role');
+        [$insql, $params] = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'role');
         $roleids = $DB->get_fieldset_sql(
             "SELECT id
                FROM {role}
@@ -227,12 +224,12 @@ class audience_manager {
             return [];
         }
 
-        list($usersql, $userparams) = get_enrolled_sql($context, '', $groupid, true);
+        [$usersql, $userparams] = get_enrolled_sql($context, '', $groupid, true);
         if (trim($usersql) === '') {
             return [];
         }
 
-        list($roleinsql, $roleparams) = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'rid');
+        [$roleinsql, $roleparams] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'rid');
 
         // Role assignments are matched in this module's context and, for
         // teachers, in the course context above it. A co-teacher is normally
@@ -243,7 +240,7 @@ class audience_manager {
         if ($coursecontext) {
             $ctxids[] = $coursecontext->id;
         }
-        list($ctxinsql, $ctxparams) = $DB->get_in_or_equal($ctxids, SQL_PARAMS_NAMED, 'ctx');
+        [$ctxinsql, $ctxparams] = $DB->get_in_or_equal($ctxids, SQL_PARAMS_NAMED, 'ctx');
 
         $sql = "SELECT u.*
                   FROM {user} u

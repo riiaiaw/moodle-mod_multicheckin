@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Upgrade the mod_multicheckin plugin.
  *
@@ -37,10 +35,9 @@ function xmldb_multicheckin_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    // v1.1.0 — early-leave modes, self check-in, QR support and reminders.
+    // Version 1.1.0 - early-leave modes, self check-in, QR support and reminders.
     if ($oldversion < 2026042001) {
-
-        // --- New fields on the main session table. ---
+        // New fields on the main session table.
         $table = new xmldb_table('multicheckin');
 
         $fields = [
@@ -56,7 +53,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
             }
         }
 
-        // --- New fields on the check-in point table. ---
+        // New fields on the check-in point table.
         $ptable = new xmldb_table('multicheckin_point');
 
         $pfields = [
@@ -70,7 +67,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
             }
         }
 
-        // --- New reminder tracking table. ---
+        // New reminder tracking table.
         $ntable = new xmldb_table('multicheckin_notify');
         if (!$dbman->table_exists($ntable)) {
             $ntable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
@@ -87,10 +84,9 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042001, 'multicheckin');
     }
 
-    // v1.2.0 — geofence (anti-proxy) + configurable QR token rotation.
+    // Version 1.2.0 - geofence (anti-proxy) + configurable QR token rotation.
     if ($oldversion < 2026042002) {
-
-        // --- Geofence + QR rotation fields on the main session table. ---
+        // Geofence + QR rotation fields on the main session table.
         $table = new xmldb_table('multicheckin');
 
         $fields = [
@@ -108,7 +104,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
             }
         }
 
-        // --- Geofence audit trail table. ---
+        // Geofence audit trail table.
         $gtable = new xmldb_table('multicheckin_geo_log');
         if (!$dbman->table_exists($gtable)) {
             $gtable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
@@ -163,7 +159,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042003, 'multicheckin');
     }
 
-    // v1.4.0 — teacher-configurable point values per final status.
+    // Version 1.4.0 - teacher-configurable point values per final status.
     //
     // The values were previously hardcoded in checkin_engine (2 / 1 / 0.5 /
     // 0.5 / 0). Storing them per instance lets a teacher decide how much a
@@ -171,7 +167,6 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // gradebook normalisation divides by the highest configured value, so
     // "present" still maps to the full activity grade.
     if ($oldversion < 2026042004) {
-
         $table = new xmldb_table('multicheckin');
 
         $fields = [
@@ -190,7 +185,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042004, 'multicheckin');
     }
 
-    // v1.6.6 — classroom map picker and the shared-library bridge.
+    // Version 1.6.6 - classroom map picker and the shared-library bridge.
     //
     // No schema change: the coordinates have always been stored as WGS-84 in
     // multicheckin_place, and the picker only writes into the same two fields
@@ -201,7 +196,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042005, 'multicheckin');
     }
 
-    // v1.6.7 — normalise the component name used by the savepoints.
+    // Version 1.6.7 - normalise the component name used by the savepoints.
     //
     // Every savepoint must pass the full component name, "mod_multicheckin":
     // Moodle reads the leading segment as the plugin type, and a savepoint
@@ -217,7 +212,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042006, 'multicheckin');
     }
 
-    // v1.6.8 — component restored to the full name.
+    // Version 1.6.8 - component restored to the full name.
     //
     // v1.6.7 briefly declared the bare "multicheckin", which Moodle cannot
     // map to a plugin type. The component is back to "mod_multicheckin"; this
@@ -227,7 +222,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042007, 'multicheckin');
     }
 
-    // v1.6.9 — Moodle 5.x public/ directory support.
+    // Version 1.6.9 - Moodle 5.x public/ directory support.
     //
     // From 5.1 the web-accessible tree moved into public/, so this plugin now
     // lives at public/mod/multicheckin/ and the authoritative config.php sits
@@ -242,7 +237,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042008, 'multicheckin');
     }
 
-    // v1.6.10 — the classroom library class is now loaded explicitly.
+    // Version 1.6.10 - the classroom library class is now loaded explicitly.
     //
     // places.php and mod_form.php call into \mod_multicheckin\place_manager but
     // only required lib.php, which does not pull the class in. The management
@@ -257,10 +252,10 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042009, 'multicheckin');
     }
 
-    // v1.6.11 — every savepoint above now passes the BARE module name.
+    // Version 1.6.11 - every savepoint above now passes the BARE module name.
     //
     // upgrade_mod_savepoint() is a thin wrapper:
-    //     upgrade_plugin_savepoint($result, $version, 'mod', $modname)
+    // upgrade_plugin_savepoint($result, $version, 'mod', $modname)
     // so the component it looks up is built as 'mod' . '_' . $modname. The
     // earlier steps here passed the full frankenstyle name 'mod_multicheckin',
     // which produced the doubled component 'mod_mod_multicheckin'. Moodle could
@@ -276,10 +271,10 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042010, 'multicheckin');
     }
 
-    // v1.6.12 — the plugin no longer hardcodes its own folder in require paths.
+    // Version 1.6.12 - the plugin no longer hardcodes its own folder in require paths.
     //
     // Every page loaded lib.php and the library class through
-    //     $CFG->dirroot . '/mod/multicheckin/...'
+    // $CFG->dirroot . '/mod/multicheckin/...'
     // On a 4.x site that happens to be right. On 5.2 the plugin lives under
     // public/mod/multicheckin/, $CFG->dirroot is the site root, and the path
     // points at a directory that does not exist: require_once fails to find
@@ -293,7 +288,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042011, 'multicheckin');
     }
 
-    // v1.6.13 — the classroom dropdowns are native form elements.
+    // Version 1.6.13 - the classroom dropdowns are native form elements.
     //
     // Both pickers (this plugin's own library and the shared one from
     // availability_gpsloc) were built as hand-written <select> markup dropped
@@ -309,7 +304,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042012, 'multicheckin');
     }
 
-    // v1.7.0 — one activity can now hold a whole series of occurrences.
+    // Version 1.7.0 - one activity can now hold a whole series of occurrences.
     //
     // Until now an activity WAS one attendance event: cm->instance pointed at
     // the single multicheckin row and that row was the session. Setting up a
@@ -317,11 +312,11 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // gains three self-referencing columns so the same row can act either as
     // the activity's configuration template or as one occurrence in a series:
     //
-    //   parentid  0 = template (what cm->instance always pointed at, and still
-    //             does); > 0 = the template this occurrence belongs to
-    //   seriesid  the batch an occurrence was generated in, so a whole series
-    //             can be listed or deleted without walking the parent chain
-    //   seqno     the occurrence's ordinal, shown as "Occurrence N"
+    // parentid  0 = template (what cm->instance always pointed at, and still
+    // does); > 0 = the template this occurrence belongs to
+    // seriesid  the batch an occurrence was generated in, so a whole series
+    // can be listed or deleted without walking the parent chain
+    // seqno     the occurrence's ordinal, shown as "Occurrence N"
     //
     // Existing data needs no migration. Every current row has parentid = 0
     // after the defaults are applied, which is exactly the "template is the
@@ -358,7 +353,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042013, 'multicheckin');
     }
 
-    // v1.7.4 - the sign-out check-in becomes optional.
+    // V1.7.4 - the sign-out check-in becomes optional.
     //
     // Not every course takes attendance at the end of class. On those sites a
     // student who signs in is done, and marking them as having left early
@@ -367,11 +362,19 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // early-leave decision, leaving a status of present or late.
     //
     // Default 1 so every existing activity keeps exactly the behaviour it has
-    // today; only a teacher who turns it off sees a change.
+    // Today; only a teacher who turns it off sees a change.
     if ($oldversion < 2026042017) {
         $table = new xmldb_table('multicheckin');
-        $field = new xmldb_field('requiresignout', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '1', 'gradebestcount');
+        $field = new xmldb_field(
+            'requiresignout',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'gradebestcount'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -379,32 +382,48 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042017, 'multicheckin');
     }
 
-    // v1.7.8 - two changes that go together.
+    // V1.7.8 - two changes that go together.
     //
     // 1. QR check-ins join the fence by default. A rotating code proves the
-    //    scanner saw a screen, not that the screen was in the classroom, and on
-    //    most sites the code is projected for a room full of people who are
-    //    already there. The column default moves to 1 so an activity created
-    //    from here on is fenced unless the teacher opts out. Existing rows keep
-    //    whatever they hold, which is 0 from v1.7.0 onwards, so nothing a
-    //    running course relies on changes underneath it.
+    // scanner saw a screen, not that the screen was in the classroom, and on
+    // most sites the code is projected for a room full of people who are
+    // already there. The column default moves to 1 so an activity created
+    // from here on is fenced unless the teacher opts out. Existing rows keep
+    // whatever they hold, which is 0 from v1.7.0 onwards, so nothing a
+    // running course relies on changes underneath it.
     //
     // 2. The audit page becomes opt-in. It is a debugging aid for the case
-    //    described in the plugin README - "the fence looks like it does
-    //    nothing" - so it should not clutter every activity view. The link is
-    //    driven by showgeoaudit, defaulting to 0, and the page itself is
-    //    unchanged and still reachable by anyone who may manage the activity.
+    // described in the plugin README - "the fence looks like it does
+    // nothing" - so it should not clutter every activity view. The link is
+    // driven by showgeoaudit, defaulting to 0, and the page itself is
+    // Unchanged and still reachable by anyone who may manage the activity.
     if ($oldversion < 2026042021) {
         $table = new xmldb_table('multicheckin');
 
-        $field = new xmldb_field('geoenforceqr', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '1', 'georadius');
+        $field = new xmldb_field(
+            'geoenforceqr',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'georadius'
+        );
         if ($dbman->field_exists($table, $field)) {
             $dbman->change_field_default($table, $field);
         }
 
-        $auditfield = new xmldb_field('showgeoaudit', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '0', 'geoenforceqr');
+        $auditfield = new xmldb_field(
+            'showgeoaudit',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'geoenforceqr'
+        );
         if (!$dbman->field_exists($table, $auditfield)) {
             $dbman->add_field($table, $auditfield);
         }
@@ -412,7 +431,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042021, 'multicheckin');
     }
 
-    // v1.7.9 - the roster becomes a setting.
+    // V1.7.9 - the roster becomes a setting.
     //
     // Until now every roster in the plugin was "enrolled, may check in", and the
     // shipped capability grants that to teachers and managers as well as
@@ -429,25 +448,38 @@ function xmldb_multicheckin_upgrade($oldversion) {
     //
     // The backfill only touches rows that are still empty. A site that has
     // somehow already set a value - or a future version that stores something
-    // else - is left alone, so re-running this step cannot flatten a choice.
+    // Else - is left alone, so re-running this step cannot flatten a choice.
     if ($oldversion < 2026042022) {
         $table = new xmldb_table('multicheckin');
 
-        $audiencefield = new xmldb_field('audience', XMLDB_TYPE_CHAR, '255', null,
-            XMLDB_NOTNULL, null, 'student', 'showgeoaudit');
+        $audiencefield = new xmldb_field(
+            'audience',
+            XMLDB_TYPE_CHAR,
+            '255',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'student',
+            'showgeoaudit'
+        );
         if (!$dbman->field_exists($table, $audiencefield)) {
             $dbman->add_field($table, $audiencefield);
         }
 
         // Backfill: every activity created before this option existed becomes
         // "students only", which is what the option means by default.
-        $DB->set_field_select('multicheckin', 'audience', 'student',
-            "audience IS NULL OR audience = ?", ['']);
+        $DB->set_field_select(
+            'multicheckin',
+            'audience',
+            'student',
+            "audience IS NULL OR audience = ?",
+            ['']
+        );
 
         upgrade_mod_savepoint(true, 2026042022, 'multicheckin');
     }
 
-    // v1.9.0 adds the leave status.
+    // V1.9.0 adds the leave status.
     //
     // Two pieces. A new per-status point value, so "on leave" scores whatever
     // the teacher decides (0.5 by default) exactly like every other status
@@ -458,12 +490,20 @@ function xmldb_multicheckin_upgrade($oldversion) {
     //
     // Existing rows need nothing done to them: the new column takes its default
     // on read (points_for_status() falls back to 0.5 when the field is absent),
-    // and no existing row can have a leave, so the table starts empty.
+    // And no existing row can have a leave, so the table starts empty.
     if ($oldversion < 2026042025) {
         $table = new xmldb_table('multicheckin');
 
-        $leavefield = new xmldb_field('pointsleave', XMLDB_TYPE_NUMBER, '10, 5', null,
-            XMLDB_NOTNULL, null, '0.5', 'pointsabsent');
+        $leavefield = new xmldb_field(
+            'pointsleave',
+            XMLDB_TYPE_NUMBER,
+            '10, 5',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0.5',
+            'pointsabsent'
+        );
         if (!$dbman->field_exists($table, $leavefield)) {
             $dbman->add_field($table, $leavefield);
         }
@@ -493,7 +533,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042025, 'multicheckin');
     }
 
-    // v1.10.0 - a description of the occurrence itself, and the freedom to
+    // V1.10.0 - a description of the occurrence itself, and the freedom to.
     // retitle one.
     //
     // The activity already had an intro, but that belongs to the ACTIVITY: it
@@ -506,12 +546,20 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // Plain text on purpose: the teacher asked for a text box, and a format
     // column that is always FORMAT_PLAIN would be a column that lies. Nothing
     // is backfilled - a description starts absent, and an absent description
-    // renders as nothing at all.
+    // Renders as nothing at all.
     if ($oldversion < 2026042026) {
         $table = new xmldb_table('multicheckin');
 
-        $descriptionfield = new xmldb_field('description', XMLDB_TYPE_TEXT, null, null,
-            null, null, null, 'introformat');
+        $descriptionfield = new xmldb_field(
+            'description',
+            XMLDB_TYPE_TEXT,
+            null,
+            null,
+            null,
+            null,
+            null,
+            'introformat'
+        );
         if (!$dbman->field_exists($table, $descriptionfield)) {
             $dbman->add_field($table, $descriptionfield);
         }
@@ -519,7 +567,7 @@ function xmldb_multicheckin_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026042026, 'multicheckin');
     }
 
-    // v1.11.0 - the occurrence description is edited in the site's rich text
+    // V1.11.0 - the occurrence description is edited in the site's rich text.
     // editor (TinyMCE), and embedded images are stored as files.
     //
     // A description therefore needs the format column every Moodle text field
@@ -540,12 +588,20 @@ function xmldb_multicheckin_upgrade($oldversion) {
     //
     // The WHERE clause is what makes the statement safe to reason about: it
     // only ever moves a row that is still sitting on the column default, so it
-    // can neither touch a rich-text row nor be undone by running twice.
+    // Can neither touch a rich-text row nor be undone by running twice.
     if ($oldversion < 2026042028) {
         $table = new xmldb_table('multicheckin');
 
-        $formatfield = new xmldb_field('descriptionformat', XMLDB_TYPE_INTEGER, '4', null,
-            XMLDB_NOTNULL, null, '1', 'description');
+        $formatfield = new xmldb_field(
+            'descriptionformat',
+            XMLDB_TYPE_INTEGER,
+            '4',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'description'
+        );
         if (!$dbman->field_exists($table, $formatfield)) {
             $dbman->add_field($table, $formatfield);
         }
@@ -553,13 +609,18 @@ function xmldb_multicheckin_upgrade($oldversion) {
         // Deliberately outside the field_exists() test above: a site that
         // already has the column (a re-run, or a column added by hand) still
         // needs its pre-rich-text rows marked plain.
-        $DB->set_field_select('multicheckin', 'descriptionformat', FORMAT_PLAIN,
-            'descriptionformat = ?', [FORMAT_HTML]);
+        $DB->set_field_select(
+            'multicheckin',
+            'descriptionformat',
+            FORMAT_PLAIN,
+            'descriptionformat = ?',
+            [FORMAT_HTML]
+        );
 
         upgrade_mod_savepoint(true, 2026042028, 'multicheckin');
     }
 
-    // v2.0.0 - a check-in may have to be proved with a photograph taken on the
+    // V2.0.0 - a check-in may have to be proved with a photograph taken on the.
     // spot, and a student who cannot take one can ask the teacher to verify it
     // by hand.
     //
@@ -575,12 +636,20 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // deliberate difference: it is keyed per POINT, not per occurrence. A
     // photograph proves one check-in, and a sign-in and a sign-out are two
     // separate proofs, so a student who cannot photograph twice raises two
-    // requests.
+    // Requests.
     if ($oldversion < 2026101400) {
         $table = new xmldb_table('multicheckin');
 
-        $photofield = new xmldb_field('photorequired', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '0', 'requiresignout');
+        $photofield = new xmldb_field(
+            'photorequired',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'requiresignout'
+        );
         if (!$dbman->field_exists($table, $photofield)) {
             $dbman->add_field($table, $photofield);
         }
@@ -660,8 +729,11 @@ function xmldb_multicheckin_upgrade($oldversion) {
     if ($oldversion < 2026101402) {
         $table = new xmldb_table('multicheckin');
 
-        $reminderindex = new xmldb_index('notifyenabled-timestart-timeend',
-            XMLDB_INDEX_NOTUNIQUE, ['notifyenabled', 'timestart', 'timeend']);
+        $reminderindex = new xmldb_index(
+            'notifyenabled-timestart-timeend',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['notifyenabled', 'timestart', 'timeend']
+        );
         if (!$dbman->index_exists($table, $reminderindex)) {
             $dbman->add_index($table, $reminderindex);
         }
@@ -688,8 +760,16 @@ function xmldb_multicheckin_upgrade($oldversion) {
     if ($oldversion < 2026101408) {
         $table = new xmldb_table('multicheckin');
 
-        $field = new xmldb_field('notifyrule', XMLDB_TYPE_CHAR, '10', null,
-            XMLDB_NOTNULL, null, 'chain', 'notifyleadtime');
+        $field = new xmldb_field(
+            'notifyrule',
+            XMLDB_TYPE_CHAR,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'chain',
+            'notifyleadtime'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -716,16 +796,32 @@ function xmldb_multicheckin_upgrade($oldversion) {
     if ($oldversion < 2026101411) {
         $table = new xmldb_table('multicheckin');
 
-        $field = new xmldb_field('qronly', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '0', 'allowselfcheckin');
+        $field = new xmldb_field(
+            'qronly',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'allowselfcheckin'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
 
         $table = new xmldb_table('multicheckin_point');
 
-        $field = new xmldb_field('qronly', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '0', 'qrcode');
+        $field = new xmldb_field(
+            'qronly',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'qrcode'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -800,10 +896,18 @@ function xmldb_multicheckin_upgrade($oldversion) {
     // in this block, and there must not be one.
     if ($oldversion < 2026101424) {
         $table = new xmldb_table('multicheckin');
-        $field = new xmldb_field('notifyenabled', XMLDB_TYPE_INTEGER, '1', null,
-            XMLDB_NOTNULL, null, '0', 'selfcheckinpassword');
+        $field = new xmldb_field(
+            'notifyenabled',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'selfcheckinpassword'
+        );
 
-        // notifyenabled leads the notifyenabled-timestart-timeend index that
+        // Notifyenabled leads the notifyenabled-timestart-timeend index that.
         // 2.0.2 put there, and database_manager::check_field_dependencies()
         // refuses ANY field change on a column that takes part in an index. It
         // refuses before it looks at what the change is, so a change that only
@@ -813,9 +917,12 @@ function xmldb_multicheckin_upgrade($oldversion) {
         //
         // 2.1.1 shipped without the drop and threw on the first site that tried
         // to upgrade, at this line. The guard of the day asked whether the call
-        // was present. It was present. Being present is not being legal.
-        $reminderindex = new xmldb_index('notifyenabled-timestart-timeend',
-            XMLDB_INDEX_NOTUNIQUE, ['notifyenabled', 'timestart', 'timeend']);
+        // Was present. It was present. Being present is not being legal.
+        $reminderindex = new xmldb_index(
+            'notifyenabled-timestart-timeend',
+            XMLDB_INDEX_NOTUNIQUE,
+            ['notifyenabled', 'timestart', 'timeend']
+        );
         if ($dbman->index_exists($table, $reminderindex)) {
             $dbman->drop_index($table, $reminderindex);
         }
@@ -848,8 +955,16 @@ function xmldb_multicheckin_upgrade($oldversion) {
         // leaves it at zero so the next run tries again. Existing rows start at
         // zero, so the first run after upgrading settles everything still inside
         // the window once - which is what it was doing anyway.
-        $finalised = new xmldb_field('timefinalised', XMLDB_TYPE_INTEGER, '10', null,
-            XMLDB_NOTNULL, null, '0', 'timemodified');
+        $finalised = new xmldb_field(
+            'timefinalised',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timemodified'
+        );
         if (!$dbman->field_exists($table, $finalised)) {
             $dbman->add_field($table, $finalised);
         }

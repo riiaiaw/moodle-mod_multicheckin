@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Combine the per-occurrence results of an activity into one gradebook score.
  *
@@ -46,7 +44,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class grade_aggregator {
-
     /** @var string Aggregate mode: average every occurrence. */
     public const MODE_ALL = 'all';
     /** @var string Aggregate mode: average the best N occurrences. */
@@ -72,8 +69,13 @@ class grade_aggregator {
      *                         get_records_sql() returns it (id => record).
      * @return array userid => grade scaled to the activity maximum.
      */
-    public static function user_grades(\stdClass $template, float $totalpoints, int $userid = 0,
-            ?array $sessions = null, ?array $rows = null): array {
+    public static function user_grades(
+        \stdClass $template,
+        float $totalpoints,
+        int $userid = 0,
+        ?array $sessions = null,
+        ?array $rows = null
+    ): array {
         global $DB;
 
         $sessions = $sessions ?? session_manager::list_sessions($template);
@@ -88,7 +90,7 @@ class grade_aggregator {
             // A caller that narrowed the read to one user must not hand in a
             // whole-class row set, so the shortcut is declined rather than
             // trusted: the rows are read here when $userid is set.
-            list($insql, $params) = $DB->get_in_or_equal($sessionids, SQL_PARAMS_NAMED, 'sess');
+            [$insql, $params] = $DB->get_in_or_equal($sessionids, SQL_PARAMS_NAMED, 'sess');
             if ($userid) {
                 $params['userid'] = $userid;
                 $userclause = ' AND userid = :userid';
@@ -118,7 +120,7 @@ class grade_aggregator {
         $mode = self::mode($template);
         $best = self::best_count($template);
 
-        // "Sum" totals the occurrences rather than averaging them, so an
+        // The "Sum" mode totals the occurrences rather than averaging them, so an
         // occurrence the student has no result row for has to score zero
         // rather than be skipped: skipping it would let a student who attended
         // one class out of ten sit at the full mark. That is the whole point of

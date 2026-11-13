@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Whole-series attendance report.
  *
@@ -35,7 +33,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class report_helper {
-
     /**
      * Render (or download) the series attendance matrix.
      *
@@ -47,8 +44,14 @@ class report_helper {
      * @param bool $csv True to stream a CSV download instead of rendering the page.
      * @return void
      */
-    public static function render_series_report(\stdClass $course, \stdClass $cm, \context_module $context,
-            \stdClass $template, array $sessions, bool $csv = false): void {
+    public static function render_series_report(
+        \stdClass $course,
+        \stdClass $cm,
+        \context_module $context,
+        \stdClass $template,
+        array $sessions,
+        bool $csv = false
+    ): void {
         global $DB, $OUTPUT, $PAGE;
 
         // One roster for the whole series: the audience is a property of the
@@ -76,17 +79,23 @@ class report_helper {
 
         // The activity name matters here because the matrix is reached from a
         // specific occurrence and covers all of them.
-        echo \html_writer::div(format_string($template->name)
+        echo \html_writer::div(
+            format_string($template->name)
             . ' — ' . get_string('occurrence_count', 'mod_multicheckin', count($sessions)),
-            'text-muted mb-3');
+            'text-muted mb-3'
+        );
 
-        $csvurl = new \moodle_url('/mod/multicheckin/report.php',
-            ['id' => $cm->id, 'all' => 1, 'download' => 'csv']);
+        $csvurl = new \moodle_url(
+            '/mod/multicheckin/report.php',
+            ['id' => $cm->id, 'all' => 1, 'download' => 'csv']
+        );
         // The same button the per-occurrence sheet draws, from the same place:
         // two reports that export the same way should not export in two
         // different-looking ways.
-        echo \html_writer::div(report_bar::export_button($csvurl),
-            'd-flex flex-wrap align-items-center gap-3 mb-3 multicheckin-report-bar');
+        echo \html_writer::div(
+            report_bar::export_button($csvurl),
+            'd-flex flex-wrap align-items-center gap-3 mb-3 multicheckin-report-bar'
+        );
 
         $table = new \html_table();
         $table->attributes['class'] = 'generaltable';
@@ -99,9 +108,11 @@ class report_helper {
             $seq++;
             // The column head is a short ordinal plus the date, because a
             // twenty-column table of full dates is unreadable when projected.
-            $table->head[] = \html_writer::tag('span',
+            $table->head[] = \html_writer::tag(
+                'span',
                 get_string('occurrence_short', 'mod_multicheckin', $seq),
-                ['class' => 'fw-bold'])
+                ['class' => 'fw-bold']
+            )
                 . \html_writer::empty_tag('br')
                 . userdate($session->timestart, get_string('strftimedateshort', 'langconfig'));
         }
@@ -118,7 +129,8 @@ class report_helper {
                 } else {
                     $line[] = \html_writer::span(
                         $statuslabels[$cell->statuscode] ?? $cell->statuscode,
-                        checkin_engine::status_class($cell->statuscode));
+                        checkin_engine::status_class($cell->statuscode)
+                    );
                 }
             }
             $line[] = $row->attended . ' / ' . count($sessions);
@@ -132,9 +144,13 @@ class report_helper {
 
         $backurl = new \moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]);
         echo \html_writer::div(
-            \html_writer::link($backurl, get_string('back'),
-                ['class' => 'btn btn-outline-secondary btn-sm']),
-            'd-flex flex-wrap align-items-center gap-2 mb-3');
+            \html_writer::link(
+                $backurl,
+                get_string('back'),
+                ['class' => 'btn btn-outline-secondary btn-sm']
+            ),
+            'd-flex flex-wrap align-items-center gap-2 mb-3'
+        );
 
         echo $OUTPUT->footer();
     }
@@ -159,7 +175,7 @@ class report_helper {
         $results = [];
         $resultrows = [];
         if ($sessionids) {
-            list($insql, $params) = $DB->get_in_or_equal($sessionids, SQL_PARAMS_NAMED, 'sess');
+            [$insql, $params] = $DB->get_in_or_equal($sessionids, SQL_PARAMS_NAMED, 'sess');
             $rows = $DB->get_records_sql(
                 "SELECT id, sessionid, userid, statuscode, points
                    FROM {multicheckin_result}
@@ -175,25 +191,32 @@ class report_helper {
             }
         }
 
-        $grades = grade_aggregator::user_grades($template, self::totalpoints($template), 0,
-            $sessions, $resultrows);
+        $grades = grade_aggregator::user_grades(
+            $template,
+            self::totalpoints($template),
+            0,
+            $sessions,
+            $resultrows
+        );
 
         $out = [];
         foreach ($users as $user) {
             $cells = $results[(int) $user->id] ?? [];
             $attended = 0;
             foreach ($cells as $cell) {
-                // "Attended" counts the statuses that mean the student was
+                // The "Attended" figure counts the statuses that mean the student was
                 // actually there. A leave is not one of them: the absence was
                 // excused, but the count is about presence and saying otherwise
                 // would overstate it. Written as a list rather than "not
                 // absent" so a later status cannot be counted by accident.
-                if (in_array($cell->statuscode, [
+                if (
+                    in_array($cell->statuscode, [
                     checkin_engine::STATUS_PRESENT,
                     checkin_engine::STATUS_LATE,
                     checkin_engine::STATUS_EARLY,
                     checkin_engine::STATUS_LATE_EARLY,
-                ], true)) {
+                    ], true)
+                ) {
                     $attended++;
                 }
             }
@@ -247,8 +270,11 @@ class report_helper {
      */
     public static function aggregate_note(\stdClass $template): string {
         if (grade_aggregator::mode($template) === grade_aggregator::MODE_BEST) {
-            return get_string('aggregate_note_best', 'mod_multicheckin',
-                grade_aggregator::best_count($template));
+            return get_string(
+                'aggregate_note_best',
+                'mod_multicheckin',
+                grade_aggregator::best_count($template)
+            );
         }
         return get_string('aggregate_note_all', 'mod_multicheckin');
     }

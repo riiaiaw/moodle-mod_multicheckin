@@ -43,7 +43,6 @@ require_once($CFG->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class session_note_form extends \moodleform {
-
     /**
      * Build the form.
      */
@@ -69,14 +68,17 @@ class session_note_form extends \moodleform {
         // single 'description' column. The id attribute is not optional - the
         // element's template reads it, and without it the editor renders with a
         // PHP notice and a name no script can address.
-        $mform->addElement('editor', $field,
+        $mform->addElement(
+            'editor',
+            $field,
             get_string('session_description', 'mod_multicheckin'),
             [
                 'id' => \mod_multicheckin\description_editor::element_id((int) $session->id),
                 'rows' => 14,
                 'cols' => 60,
             ],
-            \mod_multicheckin\description_editor::editor_options(\context_module::instance($cmid)));
+            \mod_multicheckin\description_editor::editor_options(\context_module::instance($cmid))
+        );
         $mform->setType($field, PARAM_RAW);
         $mform->addHelpButton($field, 'session_description', 'mod_multicheckin');
 

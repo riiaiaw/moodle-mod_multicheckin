@@ -32,6 +32,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -64,7 +65,7 @@ $geolat = optional_param('geolat', null, PARAM_RAW_TRIMMED);
 $geolng = optional_param('geolng', null, PARAM_RAW_TRIMMED);
 $geoacc = optional_param('geoacc', null, PARAM_RAW_TRIMMED);
 
-// 'done' means the browser has already been asked for a position during this
+// The 'done' value means the browser has already been asked for a position during this
 // attempt, so a refusal lands on the verdict instead of looping.
 $geostate = optional_param('geo', '', PARAM_ALPHA);
 
@@ -92,7 +93,7 @@ $session->coursemodule = $cm->id;
 
 $viewurl = new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]);
 
-// ---- CSRF: this page writes, so it must not be reachable from a page
+// CSRF: this page writes, so it must not be reachable from a page.
 // somebody else built ----
 //
 // Everything below this line writes: a log row, a result row, a gradebook
@@ -112,20 +113,28 @@ $viewurl = new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]);
 // <img> attack takes - while a scan, which is a navigation, is unaffected.
 if ($method === 'qr') {
     if (qr_manager::passive_embed()) {
-        redirect($viewurl, get_string('qr_scan_in_browser', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('qr_scan_in_browser', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 } else {
     require_sesskey();
 }
 
-// ---- Decide the effective method and validate credentials ----
+// Decide the effective method and validate credentials.
 if ($method === 'qr') {
     $slot = required_param('slot', PARAM_INT);
     $token = required_param('token', PARAM_ALPHANUM);
     if (!qr_manager::validate($point, $slot, $token, null, $session)) {
-        redirect($viewurl, get_string('qr_invalid', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('qr_invalid', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 } else if ($method === 'password') {
     // A QR-only point has no password route. Refused HERE, before the
@@ -135,8 +144,12 @@ if ($method === 'qr') {
     // classmate must still be unable to sign in, otherwise "only the code on
     // the screen works" is not true and the teacher has no way to tell.
     if (qr_manager::only_scan($session, $point)) {
-        redirect($viewurl, get_string('qronly_only_scan', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('qronly_only_scan', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 
     // Password may be per-point or a session-wide self check-in password.
@@ -148,33 +161,45 @@ if ($method === 'qr') {
         $expected = $session->selfcheckinpassword;
     }
     if ($expected === '' || !hash_equals($expected, $submitted)) {
-        redirect($viewurl, get_string('password_invalid', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('password_invalid', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 } else {
     // Self check-in: only allowed if the teacher enabled it.
     $method = 'self';
     if (empty($session->allowselfcheckin)) {
-        redirect($viewurl, get_string('selfcheckin_disabled', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('selfcheckin_disabled', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
     // And a QR-only point closes this route as well, checked after the
     // occurrence-wide switch so the wider rule speaks first. view.php does not
     // draw the button for such a point, but hiding a button is not a rule: the
     // URL is guessable, so the refusal has to live on the page that writes.
     if (qr_manager::only_scan($session, $point)) {
-        redirect($viewurl, get_string('qronly_only_scan', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            get_string('qronly_only_scan', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 }
 
-// ---- Geofence: is this user physically/network-wise allowed to mark present? ----
+// Geofence: is this user physically/network-wise allowed to mark present?
 // Teachers and managers bypass the fence (they take the roll in person); the
 // fence exists to stop students checking in from a dorm room.
 //
 // The position is declared out here because the photo pass has to carry it: the
 // capture happens on another page, and the fence is judged again there on the
-// same numbers rather than being remembered as a verdict.
+// Same numbers rather than being remembered as a verdict.
 $clientgeo = null;
 if (!has_capability('mod/multicheckin:manage', $context)) {
     if ($geolat !== null && $geolng !== null && $geolat !== '' && $geolng !== '') {
@@ -197,8 +222,10 @@ if (!has_capability('mod/multicheckin:manage', $context)) {
     // Passwords are left alone: replaying the request would put the password in
     // the URL, and a typed password is a different kind of proof from a scan.
     $effective = geo_manager::effective_mode($session, $method);
-    if ($clientgeo === null && $geostate !== 'done' && $method !== 'password'
-            && geo_manager::mode_needs_gps($effective)) {
+    if (
+        $clientgeo === null && $geostate !== 'done' && $method !== 'password'
+            && geo_manager::mode_needs_gps($effective)
+    ) {
         $baseparams = [
             'id' => $cmid,
             'session' => $sessionid,
@@ -228,8 +255,10 @@ if (!has_capability('mod/multicheckin:manage', $context)) {
         ]);
 
         echo $OUTPUT->header();
-        echo html_writer::div(get_string('geo_locating', 'mod_multicheckin'),
-            'alert alert-info multicheckin-geobridge');
+        echo html_writer::div(
+            get_string('geo_locating', 'mod_multicheckin'),
+            'alert alert-info multicheckin-geobridge'
+        );
         echo html_writer::tag('script', "
 (function() {
     var cfg = $cfg;
@@ -256,15 +285,23 @@ if (!has_capability('mod/multicheckin:manage', $context)) {
 
     $verdict = geo_manager::evaluate($session, $point, (int) $USER->id, $method, $clientgeo);
     if (!$verdict['allowed']) {
-        redirect($viewurl, geo_manager::reason_string($verdict['reason']), null,
-            \core\output\notification::NOTIFY_ERROR);
+        redirect(
+            $viewurl,
+            geo_manager::reason_string($verdict['reason']),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 }
 
-// ---- Common gate: the point must be open and not already recorded ----
+// Common gate: the point must be open and not already recorded.
 if (!session_manager::point_is_open($session, $point)) {
-    redirect($viewurl, get_string('point_closed', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('point_closed', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $already = $DB->record_exists('multicheckin_log', [
@@ -273,8 +310,12 @@ $already = $DB->record_exists('multicheckin_log', [
     'userid' => (int) $USER->id,
 ]);
 if ($already) {
-    redirect($viewurl, get_string('already_checked_in', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('already_checked_in', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 // A student on leave is not expected in class, and a leave outranks the logs -
@@ -283,11 +324,15 @@ if ($already) {
 // written silently. This is the scan path as well, which is deliberate: the
 // code on screen says "come in", and a leave is the opposite statement.
 if (leave_manager::record((int) $session->id, (int) $USER->id)) {
-    redirect($viewurl, get_string('leave_already', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('leave_already', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
-// ---- The photo gate ----
+// The photo gate.
 //
 // For a photo occurrence nothing is written yet. What happens instead is that
 // the successful credential check above is exchanged for a short-lived pass,
@@ -303,7 +348,7 @@ if (leave_manager::record((int) $session->id, (int) $USER->id)) {
 // and nothing else.
 //
 // Teachers are exempt, exactly as they are from the fence: they take the roll
-// in person, and a photograph of the teacher is not evidence about anybody.
+// In person, and a photograph of the teacher is not evidence about anybody.
 if (!has_capability('mod/multicheckin:manage', $context) && photo_manager::is_required($session)) {
     // The Moodle App renders this plugin in an in-app browser where
     // getUserMedia does not exist, so a student arriving that way would be
@@ -315,8 +360,12 @@ if (!has_capability('mod/multicheckin:manage', $context) && photo_manager::is_re
             'session' => $sessionid,
             'point' => $pointid,
         ]);
-        redirect($fallback, get_string('photo_app_fallback', 'mod_multicheckin'), null,
-            \core\output\notification::NOTIFY_INFO);
+        redirect(
+            $fallback,
+            get_string('photo_app_fallback', 'mod_multicheckin'),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
     }
 
     $passtoken = photo_manager::issue_pass($session, $point, $method, $clientgeo);
@@ -329,7 +378,7 @@ if (!has_capability('mod/multicheckin:manage', $context) && photo_manager::is_re
     redirect($capture);
 }
 
-// ---- Record the check-in ----
+// Record the check-in.
 session_manager::record_checkin($session, $point, (int) $USER->id, $method);
 
 $event = \mod_multicheckin\event\checkin_recorded::create([
@@ -347,5 +396,9 @@ $event->trigger();
 checkin_engine::refresh_user($session, (int) $USER->id);
 multicheckin_update_grades($session, (int) $USER->id);
 
-redirect($viewurl, get_string('checkin_recorded_ok', 'mod_multicheckin'), null,
-    \core\output\notification::NOTIFY_SUCCESS);
+redirect(
+    $viewurl,
+    get_string('checkin_recorded_ok', 'mod_multicheckin'),
+    null,
+    \core\output\notification::NOTIFY_SUCCESS
+);

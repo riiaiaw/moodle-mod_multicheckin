@@ -92,8 +92,7 @@ $string['geoipranges_invalid'] = 'This is not a valid IP address or CIDR range: 
 $string['geolat'] = 'Classroom latitude';
 $string['geolat_help'] = 'Latitude of the classroom centre, in decimal degrees (for example 30.4635000).';
 $string['geolng'] = 'Classroom longitude';
-$string['geolng_help'] = 'Longitude of the classroom centre, in decimal degrees (for example 114.1234000).'
-    . ' Enter the coordinates as WGS-84, the datum a browser or phone reports.';
+$string['geolng_help'] = 'Longitude of the classroom centre, in decimal degrees (for example 114.1234000). Enter the coordinates as WGS-84, the datum a browser or phone reports.';
 $string['georadius'] = 'Allowed radius (metres)';
 $string['georadius_help'] = 'A check-in passes when the reported position is within this distance of the centre. Between 10 and 5000 metres; 100 m suits a lecture hall.';
 $string['georadius_range'] = 'The radius must be between 10 and 5000 metres.';
@@ -297,10 +296,10 @@ $string['privacy:metadata:multicheckin_leave:reviewedby'] = 'The teacher who rev
 $string['privacy:metadata:multicheckin_leave:timecreated'] = 'When the leave was recorded.';
 $string['privacy:metadata:multicheckin_leave:timemodified'] = 'When the leave was last changed.';
 
-// ---- Shared classroom location library ----
+// Shared classroom location library.
 //
 // A site-wide list of named rooms, so a teacher picks a classroom instead of
-// retyping its coordinates into every activity.
+// Retyping its coordinates into every activity.
 $string['placesection'] = 'Saved classroom';
 $string['placeselectnone'] = 'Select a saved classroom...';
 $string['sharedplaceselect'] = 'Classroom from the geolocation plugin';
@@ -377,7 +376,7 @@ $string['privacy:metadata:multicheckin_place:usermodified'] = 'The user who last
 $string['privacy:metadata:multicheckin_place:timecreated'] = 'When the classroom was first saved.';
 $string['privacy:metadata:multicheckin_place:timemodified'] = 'When the classroom was last edited.';
 
-// ---- Mid-session check-ins (v1.4.0) ----
+// Mid-session check-ins (v1.4.0).
 $string['midsection'] = 'Mid-session check-ins';
 $string['midsection_help'] = 'Roll call rounds during the session, between sign-in and sign-out. Set how many there are and when each one opens; fine tuning (exact seconds, per-point password, QR, reminders) stays on the manage points page. Changing the count keeps the existing points and their records where possible: surplus points at the end are removed with their logs, missing ones are appended.';
 $string['midcount'] = 'Number of mid-session check-ins';
@@ -393,7 +392,7 @@ $string['midopen_invalid'] = 'The opening time must be between 0 and 2880 minute
 $string['midwindow_invalid'] = 'The window length must be between 1 and 480 minutes.';
 $string['midpoints_synced'] = 'Mid check-ins were updated on {$a->sessions} session(s): {$a->added} added, {$a->removed} removed, {$a->signed} signed. Points that already carried a check-in were kept.';
 
-// ---- Status point values (v1.4.0) ----
+// Status point values (v1.4.0).
 $string['statuspointssection'] = 'Grade points per status';
 $string['statuspointssection_help'] = 'How many raw points each final status earns for this session. The course grade is the earned points divided by the largest configured value, times the maximum grade above — so with the defaults, "present" scores the full activity grade, "late" half of it, and so on. Grades are pushed to the gradebook after every check-in, after recomputing, and when the session is finalised.';
 $string['pointspresent'] = 'Present (points)';
@@ -405,12 +404,12 @@ $string['pointsabsent'] = 'Absent (points)';
 $string['pointsleave'] = 'On leave (points)';
 $string['statuspoints_invalid'] = 'Point values must be between 0 and 1000.';
 
-// ---- Occurrence series (v1.7.0) ----
+// Occurrence series (v1.7.0).
 //
 // One activity carries a term's worth of attendance: the activity itself keeps
 // the shared settings (grace periods, geofence, point values, mid check-in
 // structure) and holds any number of occurrences, each with its own date and
-// time.
+// Time.
 $string['seriessection'] = 'Attendance occurrences';
 $string['seriessection_help'] = 'Generate all the sessions for a teaching period at once. The activity keeps the shared settings (timing rules, geofence, QR, point values, mid check-in structure) while each occurrence has its own date and check-in points. With no occurrences the activity is itself the single session, exactly as before.';
 $string['series_repeat'] = 'Repeat';
@@ -481,10 +480,10 @@ $string['series_none_yet'] = 'This activity has no generated occurrences yet.';
 $string['series_is_template'] = 'That record is the activity configuration template and cannot be deleted as an occurrence.';
 $string['series_bad_session'] = 'That occurrence does not belong to this activity, or no longer exists.';
 
-// ---- Editing an occurrence (v1.10.0) ----
+// Editing an occurrence (v1.10.0).
 // A teacher can retitle one occurrence and write what it is for. The times are
 // editable too, which is why the recompute wording below exists: an occurrence
-// start is the origin every check-in point is measured from.
+// Start is the origin every check-in point is measured from.
 $string['session_title'] = 'Title';
 $string['session_title_help'] = 'What this occurrence is called, for example "Week 3: map projections". It starts as the activity name, which is the same for every occurrence, so giving one its own title is what makes a series of thirty readable.';
 $string['session_title_required'] = 'The title cannot be empty.';
@@ -569,13 +568,13 @@ $string['attendancecount'] = 'Attended';
 $string['aggregate_note_all'] = 'The grade column is the average of every occurrence the student has a result for.';
 $string['aggregate_note_best'] = 'The grade column is the average of the student\'s best {$a} occurrences.';
 
-// ---- Site administration ----
+// Site administration.
 $string['maxsessions'] = 'Maximum occurrences per generation';
 $string['maxsessions_desc'] = 'The most attendance occurrences a single save or rebuild can create for one activity. This bounds the work one form submission can trigger: a daily repeat with a mistyped end year would otherwise create thousands of sessions with their check-in points. The default of 60 suits a term of twice-weekly classes. Values above {$a} are reduced to {$a}.';
 
-// ---- Teacher-side marking (v1.7.7) ----
+// Teacher-side marking (v1.7.7).
 // Students check in through checkin.php; this is the channel a teacher uses to
-// add, correct or withdraw a record.
+// Add, correct or withdraw a record.
 $string['marks_edit'] = 'Edit';
 $string['marks_edit_link'] = 'Edit check-in records';
 $string['marks_edit_heading'] = 'Check-in records for {$a}';
@@ -603,7 +602,7 @@ $string['marks_truncated'] = 'Warning: this submission carried {$a->got} of {$a-
 $string['markall_link'] = 'Whole-class marking';
 $string['nopoints'] = 'This session has no check-in points yet. Add them on the session management page first.';
 
-// ---- Geofence audit (v1.7.7) ----
+// Geofence audit (v1.7.7).
 // Read-only page: surfaces the decisions geo_manager already stores, to answer
 // "why did the fence do nothing?".
 $string['audit_heading'] = 'Geofence audit';

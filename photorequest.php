@@ -39,6 +39,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -87,29 +88,47 @@ $PAGE->set_context($context);
 // A request only means something where a photograph was demanded. Elsewhere it
 // would be a second way to ask for something the student can simply do.
 if (!photo_manager::is_required($session)) {
-    redirect($viewurl, get_string('photoreq_notrequired', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('photoreq_notrequired', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 // The same gates a check-in itself has to clear, and for the same reason: a
 // request is a claim about being in this class now.
 if (!session_manager::point_is_open($session, $point)) {
-    redirect($viewurl, get_string('point_closed', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $viewurl,
+        get_string('point_closed', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
-if ($DB->record_exists('multicheckin_log', [
+if (
+    $DB->record_exists('multicheckin_log', [
     'sessionid' => (int) $session->id,
     'pointid' => (int) $point->id,
     'userid' => (int) $USER->id,
-])) {
-    redirect($viewurl, get_string('already_checked_in', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    ])
+) {
+    redirect(
+        $viewurl,
+        get_string('already_checked_in', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 if (leave_manager::record((int) $session->id, (int) $USER->id)) {
-    redirect($viewurl, get_string('leave_already', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_INFO);
+    redirect(
+        $viewurl,
+        get_string('leave_already', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 $existing = photo_manager::record_for((int) $session->id, (int) $point->id, (int) $USER->id);
@@ -124,8 +143,12 @@ if (data_submitted()) {
 
     photo_manager::request($session, $point, (int) $USER->id, $reason);
 
-    redirect($viewurl, get_string('photoreq_submitted', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $viewurl,
+        get_string('photoreq_submitted', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -160,11 +183,15 @@ $textarea = html_writer::tag('textarea', '', [
     'class' => 'form-control',
 ]);
 echo html_writer::div(
-    html_writer::tag('label', get_string('photoreq_reason', 'mod_multicheckin'),
-        ['for' => 'multicheckin-photoreq-reason', 'class' => 'form-label'])
+    html_writer::tag(
+        'label',
+        get_string('photoreq_reason', 'mod_multicheckin'),
+        ['for' => 'multicheckin-photoreq-reason', 'class' => 'form-label']
+    )
     . $textarea
     . html_writer::div(get_string('photoreq_reason_help', 'mod_multicheckin'), 'form-text'),
-    'mb-3');
+    'mb-3'
+);
 
 // Submitted through a real button rather than a link: this writes a row, and a
 // GET that creates something can be triggered by a prefetcher.

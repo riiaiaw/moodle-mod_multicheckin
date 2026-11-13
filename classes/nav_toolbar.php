@@ -16,8 +16,6 @@
 
 namespace mod_multicheckin;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The page toolbar: an activity's options, as two groups of buttons.
  *
@@ -43,7 +41,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class nav_toolbar {
-
     /** @var string What a student reaches for. */
     public const GROUP_STUDENT = 'student';
 
@@ -148,8 +145,10 @@ class nav_toolbar {
                 continue;
             }
 
-            $out .= \html_writer::div(get_string($labelkey, 'mod_multicheckin'),
-                'text-uppercase text-muted small fw-bold mb-2 multicheckin-toolbar-title');
+            $out .= \html_writer::div(
+                get_string($labelkey, 'mod_multicheckin'),
+                'text-uppercase text-muted small fw-bold mb-2 multicheckin-toolbar-title'
+            );
             $out .= \html_writer::div(implode('', $cells), 'd-flex flex-wrap gap-2 mb-3 multicheckin-toolbar-group');
         }
 

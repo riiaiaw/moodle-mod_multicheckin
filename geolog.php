@@ -33,6 +33,7 @@
 // public/config.php there, which is not the file that defines the site.
 // Resolving against __DIR__ and probing both layouts finds the real one on
 // either a 4.x tree (mod/<name>/) or a 5.x tree (public/mod/<name>/).
+// phpcs:ignore moodle.Files.MoodleInternal.MoodleInternalGlobalState -- config.php is above public/ on 5.x.
 $mcroots = [__DIR__ . '/../../config.php', __DIR__ . '/../../../config.php'];
 foreach ($mcroots as $mcroot) {
     if (is_readable($mcroot)) {
@@ -70,9 +71,12 @@ if (!$template) {
 
 $session = session_manager::resolve_session($template, $sessionparam);
 if (!$session) {
-    redirect(new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
-        get_string('series_bad_session', 'mod_multicheckin'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        new moodle_url('/mod/multicheckin/view.php', ['id' => $cm->id]),
+        get_string('series_bad_session', 'mod_multicheckin'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $sessions = session_manager::list_sessions($template);
@@ -98,10 +102,14 @@ echo $OUTPUT->heading(get_string('audit_heading', 'mod_multicheckin'));
 
 if (count($sessions) > 1) {
     echo \mod_multicheckin\occurrence_helper::render_picker(
-        $cm->id, $sessions, (int) $session->id, 'geolog.php');
+        $cm->id,
+        $sessions,
+        (int) $session->id,
+        'geolog.php'
+    );
 }
 
-// ---- The fence as it is configured now -----------------------------------
+// The fence as it is configured now.
 $ctable = new html_table();
 $ctable->head = [
     get_string('geomode', 'mod_multicheckin'),
@@ -145,7 +153,7 @@ foreach ($notices as $notice) {
     echo $OUTPUT->notification($notice, \core\output\notification::NOTIFY_WARNING, false);
 }
 
-// ---- Summary -------------------------------------------------------------
+// Summary.
 echo $OUTPUT->heading(get_string('audit_stats', 'mod_multicheckin'), 4);
 
 $stable = new html_table();
@@ -183,10 +191,11 @@ if ($distances['count']) {
             'mean' => format_float($distances['mean'], 1),
             'max' => format_float($distances['max'], 1),
         ]),
-        'mb-3');
+        'mb-3'
+    );
 }
 
-// ---- Filters -------------------------------------------------------------
+// Filters.
 $filters = [
     'all' => get_string('audit_filter_all', 'mod_multicheckin'),
     'allowed' => get_string('audit_filter_allowed', 'mod_multicheckin'),
@@ -201,11 +210,15 @@ foreach ($filters as $key => $label) {
 }
 echo html_writer::div(
     get_string('audit_filter', 'mod_multicheckin') . ' ' . implode(' ', $filterhtml),
-    'mb-3');
+    'mb-3'
+);
 
 if (!$fetched['rows']) {
-    echo $OUTPUT->notification(get_string('audit_empty', 'mod_multicheckin'),
-        \core\output\notification::NOTIFY_INFO, false);
+    echo $OUTPUT->notification(
+        get_string('audit_empty', 'mod_multicheckin'),
+        \core\output\notification::NOTIFY_INFO,
+        false
+    );
 } else {
     $mtable = new html_table();
     $mtable->head = [
@@ -235,7 +248,8 @@ if (!$fetched['rows']) {
             ? html_writer::span(get_string('geofence_ok', 'mod_multicheckin'), 'badge bg-success')
             : html_writer::span(
                 geo_manager::reason_string((string) ($row->reason ?? 'geofence_denied')),
-                'badge bg-danger');
+                'badge bg-danger'
+            );
 
         $note = geo_audit::explain($row, $config, $session);
 
@@ -277,14 +291,17 @@ if (!$fetched['rows']) {
                 'pages' => $fetched['pages'],
                 'total' => $fetched['total'],
             ]) . ' ' . implode(' ', $pagelinks),
-            'mt-2 text-muted small');
+            'mt-2 text-muted small'
+        );
     }
 }
 
 echo html_writer::div(get_string('audit_note', 'mod_multicheckin'), 'text-muted small mt-3');
 
-$backurl = new moodle_url('/mod/multicheckin/view.php',
-    ['id' => $cm->id, 'session' => $session->id]);
+$backurl = new moodle_url(
+    '/mod/multicheckin/view.php',
+    ['id' => $cm->id, 'session' => $session->id]
+);
 echo html_writer::div($OUTPUT->single_button($backurl, get_string('back'), 'get'), 'mt-3');
 
 echo $OUTPUT->footer();

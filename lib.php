@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Feature support declaration.
  *
@@ -217,8 +215,17 @@ function multicheckin_delete_instance($id) {
     // Remove any gradebook item for this instance.
     $cm = get_coursemodule_from_instance('multicheckin', $id, $session->course, false, IGNORE_MISSING);
     if ($cm) {
-        grade_update('mod/multicheckin', $session->course, 'mod', 'multicheckin',
-            $id, 0, null, null, ['deleted' => 1]);
+        grade_update(
+            'mod/multicheckin',
+            $session->course,
+            'mod',
+            'multicheckin',
+            $id,
+            0,
+            null,
+            null,
+            ['deleted' => 1]
+        );
     }
 
     return true;
@@ -288,10 +295,12 @@ function multicheckin_pluginfile($course, $cm, $context, $filearea, $args, $forc
     // Four areas are served: the activity intro, the optional note a leave
     // request may carry, the images a description embeds, and the photographs
     // taken at check-in. Anything else is not ours to hand out.
-    if ($filearea !== 'intro'
+    if (
+        $filearea !== 'intro'
             && $filearea !== \mod_multicheckin\leave_manager::FILEAREA
             && $filearea !== \mod_multicheckin\description_editor::FILEAREA
-            && $filearea !== \mod_multicheckin\photo_manager::FILEAREA) {
+            && $filearea !== \mod_multicheckin\photo_manager::FILEAREA
+    ) {
         return false;
     }
 
@@ -313,8 +322,10 @@ function multicheckin_pluginfile($course, $cm, $context, $filearea, $args, $forc
     // that student and the activity's teachers may read it. The capability
     // test above cannot express this on its own - every student holds it - so
     // the ownership check is what actually keeps the notes private.
-    if ($filearea === \mod_multicheckin\leave_manager::FILEAREA
-            && !\mod_multicheckin\leave_manager::can_view_attachment((int) $itemid, (int) $USER->id, $context)) {
+    if (
+        $filearea === \mod_multicheckin\leave_manager::FILEAREA
+            && !\mod_multicheckin\leave_manager::can_view_attachment((int) $itemid, (int) $USER->id, $context)
+    ) {
         return false;
     }
 
@@ -322,8 +333,10 @@ function multicheckin_pluginfile($course, $cm, $context, $filearea, $args, $forc
     // the same narrow one: the student it belongs to, or a teacher who can
     // already read this activity's reports. "Enrolled in the course" is not
     // enough, and neither is "may view the activity".
-    if ($filearea === \mod_multicheckin\photo_manager::FILEAREA
-            && !\mod_multicheckin\photo_manager::can_view((int) $itemid, (int) $USER->id, $context)) {
+    if (
+        $filearea === \mod_multicheckin\photo_manager::FILEAREA
+            && !\mod_multicheckin\photo_manager::can_view((int) $itemid, (int) $USER->id, $context)
+    ) {
         return false;
     }
 
@@ -342,14 +355,23 @@ function multicheckin_pluginfile($course, $cm, $context, $filearea, $args, $forc
  * @return void
  */
 function multicheckin_reset_course_form_definition($mform) {
-    $mform->addElement('header', 'multicheckinheader',
-        get_string('modulenameplural', 'mod_multicheckin'));
+    $mform->addElement(
+        'header',
+        'multicheckinheader',
+        get_string('modulenameplural', 'mod_multicheckin')
+    );
 
-    $mform->addElement('advcheckbox', 'reset_multicheckin',
-        get_string('resetcheckindata', 'mod_multicheckin'));
+    $mform->addElement(
+        'advcheckbox',
+        'reset_multicheckin',
+        get_string('resetcheckindata', 'mod_multicheckin')
+    );
 
-    $mform->addElement('advcheckbox', 'reset_multicheckin_series',
-        get_string('resetseries', 'mod_multicheckin', ''));
+    $mform->addElement(
+        'advcheckbox',
+        'reset_multicheckin_series',
+        get_string('resetseries', 'mod_multicheckin', '')
+    );
 }
 
 /**
@@ -391,8 +413,12 @@ function multicheckin_reset_userdata($data) {
     // single session. Separate from the check-in reset above because it changes
     // what the course looks like, not just the collected data.
     if (!empty($data->reset_multicheckin_series)) {
-        $templates = $DB->get_records('multicheckin',
-            ['course' => $data->courseid, 'parentid' => 0], '', 'id');
+        $templates = $DB->get_records(
+            'multicheckin',
+            ['course' => $data->courseid, 'parentid' => 0],
+            '',
+            'id'
+        );
         $removed = 0;
         foreach ($templates as $template) {
             $removed += \mod_multicheckin\session_manager::delete_series((int) $template->id);
