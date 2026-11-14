@@ -120,12 +120,17 @@ jobs:
       - name: Report code checker result
         if: ${{ !cancelled() && steps.codechecker.outcome != 'success' }}
         run: |
-          # GitHub keeps only the first ten error annotations of a step, so
-          # the tail of a long report would be dropped without saying so.
-          head -10 codechecker.log | while IFS= read -r line; do
-            [ -n "$line" ] && echo "::error title=phpcs::$line"
+          # One annotation with the totals, then up to nine actual findings with
+          # the file they belong to. GitHub keeps only ten error annotations per
+          # step, so the split is deliberate.
+          grep -E "^(FOUND|A TOTAL OF)" codechecker.log | head -1 | while IFS= read -r line; do
+            echo "::error title=phpcs totals::$line"
           done
-          echo "::error title=phpcs::the step above failed; see the annotations"
+          awk '/^FILE: /{f=$2}
+               /^ *[0-9]+ \| (ERROR|WARNING)/{ if (n++ < 9) { sub(/^ +/, ""); print f " :: " $0 } }' \
+            codechecker.log | while IFS= read -r line; do
+            echo "::error title=phpcs::$line"
+          done
           exit 1
 
       - name: Moodle PHPDoc Checker
@@ -140,10 +145,11 @@ jobs:
       - name: Report PHPDoc result
         if: ${{ !cancelled() && steps.phpdoc.outcome != 'success' }}
         run: |
-          head -10 phpdoc.log | while IFS= read -r line; do
-            [ -n "$line" ] && echo "::error title=phpdoc::$line"
+          # moodlecheck prints a list of files first and the findings after it,
+          # so the bare paths are dropped: they say nothing on their own.
+          grep -vE "^/.*\.php$" phpdoc.log | grep -vE "^\s*$" | head -10 | while IFS= read -r line; do
+            echo "::error title=phpdoc::$line"
           done
-          echo "::error title=phpdoc::the step above failed; see the annotations"
           exit 1
 
       - name: Validating
