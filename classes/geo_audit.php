@@ -115,7 +115,7 @@ class geo_audit {
      * @param int $sessionid Session id.
      * @param array $options 'result' => all|allowed|rejected, 'userid' => int,
      *                       'page' => int.
-     * @return array{rows: array, total: int, page: int, pages: int}
+     * @return array Shape: rows (array), total (int), page (int), pages (int).
      */
     public static function fetch(int $sessionid, array $options = []): array {
         global $DB;
@@ -153,7 +153,7 @@ class geo_audit {
      *
      * @param int $sessionid Session id.
      * @param array $options As for fetch().
-     * @return array{total: int, allowed: int, rejected: int, reasons: array}
+     * @return array Shape: total (int), allowed (int), rejected (int), reasons (array).
      */
     public static function summary(int $sessionid, array $options = []): array {
         global $DB;
@@ -194,7 +194,7 @@ class geo_audit {
      *
      * @param int $sessionid Session id.
      * @param int $cap How many recent readings to use.
-     * @return array{count: int, min: float, median: float, mean: float, max: float}
+     * @return array Shape: count (int), min (float), median (float), mean (float), max (float).
      */
     public static function distance_stats(int $sessionid, int $cap = self::STATS_CAP): array {
         global $DB;

@@ -74,7 +74,7 @@ class geo_manager {
      * @param string $method Check-in method: self|qr|password.
      * @param array|null $clientgeo Optional ['lat' => float, 'lng' => float, 'acc' => float].
      * @param bool $audit Whether to write a row into multicheckin_geo_log.
-     * @return array{allowed: bool, reason: string}
+     * @return array Shape: allowed (bool), reason (string).
      */
     public static function evaluate(
         \stdClass $session,

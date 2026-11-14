@@ -315,7 +315,7 @@ class photo_manager {
      * is what the teacher's by-hand review is for.
      *
      * @param string $payload Data URL posted in the capture field.
-     * @return array{ok: bool, reason: string, edge: int, binary: string} Verdict, reason, longest edge, decoded bytes.
+     * @return array Verdict, reason, longest edge, decoded bytes. Shape: ok (bool), reason (string), edge (int), binary (string).
      */
     public static function validate_capture(string $payload): array {
         $prefix = self::PAYLOAD_PREFIX;

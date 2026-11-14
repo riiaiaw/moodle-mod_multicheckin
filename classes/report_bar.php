@@ -81,7 +81,7 @@ class report_bar {
      * gap). Such a row is counted in the total and in no bucket.
      *
      * @param \stdClass[] $rows Rows as built by the report, each with statuscode.
-     * @return array{total: int, counts: array<string, int>}
+     * @return array Shape: total (int), counts (array<string, int>).
      */
     public static function count(array $rows): array {
         $counts = array_fill_keys(self::codes(), 0);
@@ -110,7 +110,7 @@ class report_bar {
      * width of the current view is printed separately as "showing X of Y", so
      * both sentences on the line are true at once.
      *
-     * @param array{total: int, counts: array<string, int>} $summary As returned by count().
+     * @param array $summary As returned by count(). Shape: total (int), counts (array<string, int>).
      * @param \moodle_url|null $baseurl Current page URL; when given, each badge becomes a link.
      * @param string $selected Status code currently filtered on, or '' for none.
      * @param int $shown How many rows the table is about to draw, or -1 when unfiltered.

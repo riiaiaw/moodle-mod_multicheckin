@@ -93,7 +93,7 @@ class report_filter {
      * showed the default.
      *
      * @param array $params Raw request values, any of sort, dir, status, q.
-     * @return array{sort: string, dir: string, status: string, q: string}
+     * @return array Shape: sort (string), dir (string), status (string), q (string).
      */
     public static function normalise(array $params): array {
         $sort = (string) ($params['sort'] ?? '');

@@ -138,7 +138,7 @@ class mark_manager {
      * as the minimum over the rows.
      *
      * @param array $logs Log rows for one user and point, ascending by time.
-     * @return array{checked: bool, time: int, clock: string, method: string, count: int}
+     * @return array Shape: checked (bool), time (int), clock (string), method (string), count (int).
      */
     public static function state_from_logs(array $logs): array {
         if (!$logs) {
@@ -268,7 +268,7 @@ class mark_manager {
      * @param array $points Point records keyed by id.
      * @param int $userid The student whose record is being edited.
      * @param array $submitted Point id => ['checked' => bool, 'clock' => string].
-     * @return array{added: int, updated: int, removed: int, unchanged: int, errors: array}
+     * @return array Shape: added (int), updated (int), removed (int), unchanged (int), errors (array).
      *         Errors are keyed by point id. Nothing is written for a point that
      *         failed validation; the rest of the form still applies.
      */

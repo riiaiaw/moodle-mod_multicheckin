@@ -357,7 +357,7 @@ class place_manager {
      * Validate and normalise incoming place data.
      *
      * @param array $data Raw input.
-     * @return array{name: string, description: string, lat: float, lng: float, defaultradius: int}
+     * @return array Shape: name (string), description (string), lat (float), lng (float), defaultradius (int).
      * @throws \invalid_parameter_exception If anything is out of range or missing.
      */
     public static function validate(array $data): array {
