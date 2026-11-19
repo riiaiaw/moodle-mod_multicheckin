@@ -265,7 +265,12 @@ if (!has_capability('mod/multicheckin:manage', $context)) {
         // hash or nonce, so one tightened site policy used to leave the fence
         // permanently unable to get a position - and the student staring at
         // "locating" forever.
-        echo html_writer::div('', 'd-none', 'multicheckin-geo-bridge-config', ['data-config' => $cfg]);
+        // Moodle 5.2 takes attributes as the third argument; there is no id
+        // parameter to pass a string to, and passing one throws a TypeError.
+        echo html_writer::div('', 'd-none', [
+            'id' => 'multicheckin-geo-bridge-config',
+            'data-config' => $cfg,
+        ]);
         $PAGE->requires->js_call_amd('mod_multicheckin/geo_bridge', 'init');
         echo $OUTPUT->footer();
         exit;

@@ -527,7 +527,10 @@ $jsconfig = json_encode([
 // amd/src/photo_capture.js. An inline script cannot be covered by a CSP hash
 // or nonce, and this payload carries the watermark - course, session and room
 // names, which are teacher-written text going straight into a page.
-echo html_writer::div('', 'd-none', 'multicheckin-photo-config', ['data-config' => $jsconfig]);
+echo html_writer::div('', 'd-none', [
+    'id' => 'multicheckin-photo-config',
+    'data-config' => $jsconfig,
+]);
 $PAGE->requires->js_call_amd('mod_multicheckin/photo_capture', 'init');
 
 echo $OUTPUT->footer();

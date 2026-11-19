@@ -138,7 +138,14 @@ $statuslabels = [
 // against three here. The rows themselves are unchanged: compute_user_with()
 // is the same judgement compute_user() reaches, so a student the task has not
 // reached still gets the answer the task would have stored.
-$allresults = $DB->get_records('multicheckin_result', ['sessionid' => $session->id]);
+// Keyed by userid. get_records() keys by the first column, which is the row id, so
+// looking a student up by userid found nothing and every row was recomputed - which
+// is why the report used to show a whole class as absent while the stored results
+// said otherwise.
+$allresults = [];
+foreach ($DB->get_records('multicheckin_result', ['sessionid' => $session->id]) as $storedrow) {
+    $allresults[(int) $storedrow->userid] = $storedrow;
+}
 $allleaves = \mod_multicheckin\leave_manager::for_session((int) $session->id);
 $alllogs = [];
 foreach ($DB->get_records('multicheckin_log', ['sessionid' => $session->id]) as $log) {

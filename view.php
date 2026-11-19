@@ -380,10 +380,14 @@ if ($needsgps && $selfcheckinurls) {
             'unsupported' => get_string('geo_unsupported', 'mod_multicheckin'),
         ],
     ]);
-    echo html_writer::div('', 'd-none', 'multicheckin-geo-config', ['data-config' => $geoconfig]);
+    echo html_writer::div('', 'd-none', [
+        'id' => 'multicheckin-geo-config',
+        'data-config' => $geoconfig,
+    ]);
     // The failure message lands here. It is a live region because the alternative
     // was alert(), which blocks the page and cannot be restyled by the theme.
-    echo html_writer::div('', 'text-danger small mb-2 d-none', 'multicheckin-geo-status', [
+    echo html_writer::div('', 'text-danger small mb-2 d-none', [
+        'id' => 'multicheckin-geo-status',
         'role' => 'status',
         'aria-live' => 'polite',
     ]);

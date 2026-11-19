@@ -384,9 +384,9 @@ class description_editor {
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
-        // Note the argument order: class, then id, then attributes. The id is
-        // what the module looks for, so it stays in its own parameter.
-        return \html_writer::div('', 'd-none', 'multicheckin-notepage-data', [
+        // Moodle 5.2 has no id parameter: the id is an attribute like any other.
+        return \html_writer::div('', 'd-none', [
+            'id' => 'multicheckin-notepage-data',
             // A note that is not valid UTF-8 cannot be encoded; the page then
             // behaves as it did before this module existed (the controls
             // navigate) rather than rendering a broken attribute.
